@@ -1,6 +1,6 @@
 const express = require('express');
-const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer');
+
 const app = express();
 app.use(express.json({ limit: '20mb' }));
 
@@ -9,40 +9,40 @@ app.get('/health', (req, res) => {
 });
 
 function buildHTML(d) {
-  const today = d.date || new Date().toISOString().slice(0,10).replace(/-/g,'.');
-  const chips = (arr) => arr.map(c => `<div class="chip">${c}</div>`).join('');
-  const ctags = (arr) => arr.map(c => `<div class="ctag">${c}</div>`).join('');
-  const siItems = (arr) => arr.map(i => `
-    <div class="si${i.highlight?' hi':''}">
-      <div class="si-ico">${i.ico}</div>
+  const today = d.date || new Date().toISOString().slice(0, 10).replace(/-/g, '.');
+  const chips = (arr = []) => arr.map(c => `<div class="chip">${c}</div>`).join('');
+  const ctags = (arr = []) => arr.map(c => `<div class="ctag">${c}</div>`).join('');
+  const siItems = (arr = []) => arr.map(i => `
+    <div class="si${i.highlight ? ' hi' : ''}">
+      <div class="si-ico">${i.ico || ''}</div>
       <div>
-        <div class="si-lbl">${i.label}</div>
-        <div class="si-val${i.amber?' a':''}">${i.val}</div>
-        <div class="si-desc">${i.desc}</div>
+        <div class="si-lbl">${i.label || ''}</div>
+        <div class="si-val${i.amber ? ' a' : ''}">${i.val || ''}</div>
+        <div class="si-desc">${i.desc || ''}</div>
       </div>
     </div>`).join('');
-  const iiItems = (arr) => arr.map(i => `
+  const iiItems = (arr = []) => arr.map(i => `
     <div class="ii">
-      <div class="ii-ico">${i.ico}</div>
+      <div class="ii-ico">${i.ico || ''}</div>
       <div>
-        <div class="ii-t">${i.title}</div>
-        <div class="ii-d">${i.desc}</div>
+        <div class="ii-t">${i.title || ''}</div>
+        <div class="ii-d">${i.desc || ''}</div>
       </div>
     </div>`).join('');
-  const ciItems = (arr) => arr.map((i,idx) => `
-    <div class="ci${idx<2?' hi':''}">
-      <div class="c-n">${idx+1}</div>
+  const ciItems = (arr = []) => arr.map((i, idx) => `
+    <div class="ci${idx < 2 ? ' hi' : ''}">
+      <div class="c-n">${idx + 1}</div>
       <div>
-        <div class="c-t">${i.title}</div>
-        <div class="c-d">${i.desc}</div>
+        <div class="c-t">${i.title || ''}</div>
+        <div class="c-d">${i.desc || ''}</div>
       </div>
     </div>`).join('');
-  const aiItems = (arr) => arr.map(i => `
+  const aiItems = (arr = []) => arr.map(i => `
     <div class="ai">
-      <div class="a-ico">${i.ico}</div>
+      <div class="a-ico">${i.ico || ''}</div>
       <div>
-        <div class="a-t">${i.title}</div>
-        <div class="a-d">${i.desc}</div>
+        <div class="a-t">${i.title || ''}</div>
+        <div class="a-d">${i.desc || ''}</div>
       </div>
     </div>`).join('');
   const bb = (num) => `
@@ -52,8 +52,12 @@ function buildHTML(d) {
       <span class="bb-date">${today}</span>
     </div>`;
 
-  const c1 = d.card1, c2 = d.card2, c3 = d.card3;
-  const c4 = d.card4, c5 = d.card5, c6 = d.card6;
+  const c1 = d.card1 || { hero: '', hero2: '', sub: '', chips: [] };
+  const c2 = d.card2 || { badge: '', title: '', items: [] };
+  const c3 = d.card3 || { badge: '', title: '', items: [] };
+  const c4 = d.card4 || { badge: '', title: '', items: [], warning: '' };
+  const c5 = d.card5 || { badge: '', title: '', items: [], quote: '' };
+  const c6 = d.card6 || { ico: '', title: '', desc: '', tags: [] };
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -149,9 +153,9 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
   <div class="g1"></div><div class="grid"></div>
   <div class="inner">
     <div class="hero">${c1.hero}</div>
-    <div class="hero2">${c1.hero2.replace(/\n/g,'<br>')}</div>
+    <div class="hero2">${String(c1.hero2 || '').replace(/\n/g,'<br>')}</div>
     <div class="bar"></div>
-    <div class="sub">${c1.sub.replace(/\n/g,'<br>')}</div>
+    <div class="sub">${String(c1.sub || '').replace(/\n/g,'<br>')}</div>
     <div class="chips">${chips(c1.chips)}</div>
   </div>
   ${bb(1)}
@@ -160,7 +164,7 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
 <!-- CARD 2 -->
 <div class="card c2" id="card-2">
   <div class="badge red">${c2.badge}</div>
-  <div class="ctitle">${c2.title.replace(/\n/g,'<br>')}</div>
+  <div class="ctitle">${String(c2.title || '').replace(/\n/g,'<br>')}</div>
   <div class="slist">${siItems(c2.items)}</div>
   ${bb(2)}
 </div>
@@ -168,7 +172,7 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
 <!-- CARD 3 -->
 <div class="card c3" id="card-3">
   <div class="badge red">${c3.badge}</div>
-  <div class="ctitle">${c3.title.replace(/\n/g,'<br>')}</div>
+  <div class="ctitle">${String(c3.title || '').replace(/\n/g,'<br>')}</div>
   <div class="ilist">${iiItems(c3.items)}</div>
   ${bb(3)}
 </div>
@@ -176,18 +180,18 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
 <!-- CARD 4 -->
 <div class="card c4" id="card-4">
   <div class="badge red">${c4.badge}</div>
-  <div class="ctitle">${c4.title.replace(/\n/g,'<br>')}</div>
+  <div class="ctitle">${String(c4.title || '').replace(/\n/g,'<br>')}</div>
   <div class="clist">${ciItems(c4.items)}</div>
-  <div class="ws">${c4.warning}</div>
+  <div class="ws">${c4.warning || ''}</div>
   ${bb(4)}
 </div>
 
 <!-- CARD 5 -->
 <div class="card c5" id="card-5">
   <div class="badge grn">${c5.badge}</div>
-  <div class="ctitle">${c5.title.replace(/\n/g,'<br>')}</div>
+  <div class="ctitle">${String(c5.title || '').replace(/\n/g,'<br>')}</div>
   <div class="alist">${aiItems(c5.items)}</div>
-  <div class="gq">${c5.quote}</div>
+  <div class="gq">${c5.quote || ''}</div>
   ${bb(5)}
 </div>
 
@@ -196,8 +200,8 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
   <div class="g1"></div><div class="grid"></div>
   <div class="inner">
     <div class="ico">${c6.ico}</div>
-    <div class="ft">${c6.title.replace(/\n/g,'<br>')}</div>
-    <div class="fd">${c6.desc.replace(/\n/g,'<br>')}</div>
+    <div class="ft">${String(c6.title || '').replace(/\n/g,'<br>')}</div>
+    <div class="fd">${String(c6.desc || '').replace(/\n/g,'<br>')}</div>
     <div class="ctags">${ctags(c6.tags)}</div>
   </div>
   ${bb(6)}
@@ -209,41 +213,59 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
 
 app.post('/generate', async (req, res) => {
   const { data } = req.body;
-  if (!data) return res.status(400).json({ error: 'data 필드가 필요합니다' });
+  if (!data) {
+    return res.status(400).json({ error: 'data 필드가 필요합니다' });
+  }
 
   let browser;
+
   try {
     browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: { width: 1200, height: 9000 },
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process'
+      ]
     });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1200, height: 9000 });
 
-    // ✅ networkidle0 대신 domcontentloaded 사용 (CDN 폰트 대기 X → 타임아웃 방지)
-    await page.setContent(buildHTML(data), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.setContent(buildHTML(data), {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
 
-    // 폰트·렌더링 안정화 대기 (2초)
     await new Promise(r => setTimeout(r, 2000));
 
     const images = [];
     for (let i = 1; i <= 6; i++) {
       const el = await page.$(`#card-${i}`);
-      if (!el) throw new Error(`card-${i} 요소를 찾을 수 없습니다`);
+      if (!el) {
+        throw new Error(`card-${i} 요소를 찾을 수 없습니다`);
+      }
+
       const screenshot = await el.screenshot({ type: 'png' });
       images.push(screenshot.toString('base64'));
     }
 
     res.json({ images, count: images.length });
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeErr) {
+        console.error('browser close error:', closeErr);
+      }
+    }
   }
 });
 
