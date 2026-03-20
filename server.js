@@ -1,7 +1,6 @@
 const express = require('express');
 const puppeteer = require('puppeteer-core');
 const chromium = require('@sparticuz/chromium');
-
 const app = express();
 app.use(express.json({ limit: '20mb' }));
 
@@ -11,10 +10,8 @@ app.get('/health', (req, res) => {
 
 function buildHTML(d) {
   const today = d.date || new Date().toISOString().slice(0,10).replace(/-/g,'.');
-
   const chips = (arr) => arr.map(c => `<div class="chip">${c}</div>`).join('');
   const ctags = (arr) => arr.map(c => `<div class="ctag">${c}</div>`).join('');
-
   const siItems = (arr) => arr.map(i => `
     <div class="si${i.highlight?' hi':''}">
       <div class="si-ico">${i.ico}</div>
@@ -24,7 +21,6 @@ function buildHTML(d) {
         <div class="si-desc">${i.desc}</div>
       </div>
     </div>`).join('');
-
   const iiItems = (arr) => arr.map(i => `
     <div class="ii">
       <div class="ii-ico">${i.ico}</div>
@@ -33,7 +29,6 @@ function buildHTML(d) {
         <div class="ii-d">${i.desc}</div>
       </div>
     </div>`).join('');
-
   const ciItems = (arr) => arr.map((i,idx) => `
     <div class="ci${idx<2?' hi':''}">
       <div class="c-n">${idx+1}</div>
@@ -42,7 +37,6 @@ function buildHTML(d) {
         <div class="c-d">${i.desc}</div>
       </div>
     </div>`).join('');
-
   const aiItems = (arr) => arr.map(i => `
     <div class="ai">
       <div class="a-ico">${i.ico}</div>
@@ -51,7 +45,6 @@ function buildHTML(d) {
         <div class="a-d">${i.desc}</div>
       </div>
     </div>`).join('');
-
   const bb = (num) => `
     <div class="bb">
       <span class="bb-name">오늘의 이슈</span>
@@ -66,8 +59,8 @@ function buildHTML(d) {
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --font:'Pretendard',sans-serif;
@@ -214,7 +207,6 @@ body{background:#080c14;font-family:var(--font);padding:40px 16px;display:flex;f
 </html>`;
 }
 
-// 메인: JSON 데이터 → 6장 PNG 배열 반환
 app.post('/generate', async (req, res) => {
   const { data } = req.body;
   if (!data) return res.status(400).json({ error: 'data 필드가 필요합니다' });
@@ -222,15 +214,20 @@ app.post('/generate', async (req, res) => {
   let browser;
   try {
     browser = await puppeteer.launch({
-  args: chromium.args,
-  defaultViewport: { width: 1200, height: 9000 },
-  executablePath: await chromium.executablePath(),
-  headless: chromium.headless,
-});
+      args: chromium.args,
+      defaultViewport: { width: 1200, height: 9000 },
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1200, height: 9000 });
-    await page.setContent(buildHTML(data), { waitUntil: 'networkidle0', timeout: 30000 });
+
+    // ✅ networkidle0 대신 domcontentloaded 사용 (CDN 폰트 대기 X → 타임아웃 방지)
+    await page.setContent(buildHTML(data), { waitUntil: 'domcontentloaded', timeout: 30000 });
+
+    // 폰트·렌더링 안정화 대기 (2초)
+    await new Promise(r => setTimeout(r, 2000));
 
     const images = [];
     for (let i = 1; i <= 6; i++) {
@@ -241,6 +238,7 @@ app.post('/generate', async (req, res) => {
     }
 
     res.json({ images, count: images.length });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
