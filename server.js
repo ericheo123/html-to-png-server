@@ -204,15 +204,12 @@ app.post('/generate', async (req, res) => {
 
   try {
     browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process'
       ]
     });
 
@@ -240,7 +237,7 @@ app.post('/generate', async (req, res) => {
     res.json({ images, count: images.length });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message })h;
   } finally {
     if (browser) {
       try {
