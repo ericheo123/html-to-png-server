@@ -237,7 +237,7 @@ app.post('/generate', async (req, res) => {
     res.json({ images, count: images.length });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message })h;
+    res.status(500).json({ error: err.message });
   } finally {
     if (browser) {
       try {
