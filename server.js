@@ -231,7 +231,8 @@ function mapCauseItems(items = []) {
 }
 
 function mapActionItems(items = []) {
-  return items.slice(0, 4).map((item) => ({
+  return items.slice(0, 4).map((item, index) => ({
+    order: String(index + 1).padStart(2, '0'),
     ico: item.ico || inferIcon(item.label, item.desc),
     title: item.label || '',
     desc: item.desc || ''
@@ -360,7 +361,7 @@ function buildHTML(d) {
     </div>`).join('');
   const actionItems = (arr = []) => arr.map((i, idx) => `
     <div class="ai${idx === 0 ? ' feature' : ''}">
-      <div class="a-ico-wrap"><div class="a-ico">${i.ico || ''}</div></div>
+      <div class="a-ico-wrap"><div class="a-ico">${i.order || ''}</div></div>
       <div>
         <div class="a-t">${i.title || ''}</div>
         <div class="a-d">${br(i.desc || '')}</div>
@@ -457,7 +458,7 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .ws{background:rgba(245,158,11,0.08);border-left:5px solid var(--a);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#fde68a;line-height:1.65;font-weight:500;word-break:keep-all;margin-top:8px}
 .ws strong{color:var(--a);font-weight:900}
 .ai{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:224px}
-.a-ico{font-size:54px;line-height:1}
+.a-ico{font-size:34px;line-height:1;font-weight:900;color:#f8fafc;letter-spacing:0.04em}
 .a-t{font-size:72px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.1;word-break:keep-all;letter-spacing:-0.04em}
 .a-d{font-size:38px;color:var(--m2);line-height:1.46;font-weight:600;word-break:keep-all}
 .gq{background:rgba(34,197,94,0.07);border-left:5px solid var(--g);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#86efac;line-height:1.65;margin-top:12px;font-weight:600;word-break:keep-all}
