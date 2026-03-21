@@ -101,9 +101,41 @@ async function uploadToImgBB(base64Image, apiKey, name) {
 
   return {
     id: payload.data.id,
-    url: payload.data.url,
+    url: payload.data.image?.url || payload.data.url,
     deleteUrl: payload.data.delete_url
   };
+}
+
+async function ensureImageUrl(url) {
+  const methods = ['HEAD', 'GET'];
+
+  for (const method of methods) {
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: method === 'GET' ? { Range: 'bytes=0-0' } : undefined
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.startsWith('image/')) {
+        return true;
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+
+  throw new Error(`Instagram image_url is not a direct image: ${url}`);
+}
+
+async function ensureImageUrls(urls = []) {
+  for (const url of urls) {
+    await ensureImageUrl(url);
+  }
 }
 
 async function createInstagramCarousel({
@@ -122,6 +154,8 @@ async function createInstagramCarousel({
   if (!Array.isArray(imageUrls) || imageUrls.length < 2) {
     throw new Error('At least 2 image URLs are required to create a carousel');
   }
+
+  await ensureImageUrls(imageUrls);
 
   const mediaItems = await Promise.all(
     imageUrls.map((imageUrl) =>
