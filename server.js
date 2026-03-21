@@ -6,6 +6,38 @@ app.use(express.json({ limit: '20mb' }));
 
 let sharedBrowser;
 
+async function uploadToImgBB(base64Image, apiKey, name) {
+  const params = new URLSearchParams();
+  params.append('key', apiKey);
+  params.append('image', base64Image);
+  if (name) {
+    params.append('name', name);
+  }
+
+  const response = await fetch('https://api.imgbb.com/1/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: params.toString()
+  });
+
+  if (!response.ok) {
+    throw new Error(`imgBB upload failed with status ${response.status}`);
+  }
+
+  const payload = await response.json();
+  if (!payload.success || !payload.data?.url) {
+    throw new Error(payload.error?.message || 'imgBB upload failed');
+  }
+
+  return {
+    id: payload.data.id,
+    url: payload.data.url,
+    deleteUrl: payload.data.delete_url
+  };
+}
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
@@ -328,7 +360,7 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 }
 
 app.post('/generate', async (req, res) => {
-  const { data } = req.body;
+  const { data, imgbbKey } = req.body;
   if (!data) {
     return res.status(400).json({ error: 'data field is required' });
   }
@@ -344,7 +376,9 @@ app.post('/generate', async (req, res) => {
     const page = await browser.newPage();
     await page.setViewport({ width: 1800, height: 14000, deviceScaleFactor: 1 });
 
-    await page.setContent(buildHTML(normalized), {
+    const html = buildHTML(normalized);
+
+    await page.setContent(html, {
       waitUntil: 'domcontentloaded',
       timeout: 60000
     });
@@ -363,8 +397,30 @@ app.post('/generate', async (req, res) => {
     }
 
     await page.close();
+
+    const effectiveImgBBKey = imgbbKey || process.env.IMGBB_API_KEY;
+    let uploads = [];
+    let urls = [];
+
+    if (effectiveImgBBKey) {
+      console.log('[generate] uploading images to imgBB');
+      uploads = await Promise.all(
+        images.map((image, index) =>
+          uploadToImgBB(image, effectiveImgBBKey, `card-${index + 1}-${Date.now()}`)
+        )
+      );
+      urls = uploads.map((item) => item.url);
+    }
+
     console.log(`[generate] response sent in ${Date.now() - startedAt}ms`);
-    res.json({ images, count: images.length });
+    res.json({
+      count: images.length,
+      images,
+      urls,
+      uploads,
+      html,
+      uploaded: urls.length
+    });
   } catch (err) {
     console.error('[generate] error:', err);
     res.status(500).json({ error: err.message });
