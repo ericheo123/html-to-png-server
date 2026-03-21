@@ -6,6 +6,24 @@ app.use(express.json({ limit: '20mb' }));
 
 let sharedBrowser;
 
+async function graphRequest(path, params) {
+  const response = await fetch(`https://graph.instagram.com/v25.0/${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams(params).toString()
+  });
+
+  const payload = await response.json();
+  if (!response.ok || payload.error) {
+    const message = payload?.error?.message || `Instagram request failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
 async function uploadToImgBB(base64Image, apiKey, name) {
   const params = new URLSearchParams();
   params.append('key', apiKey);
@@ -35,6 +53,56 @@ async function uploadToImgBB(base64Image, apiKey, name) {
     id: payload.data.id,
     url: payload.data.url,
     deleteUrl: payload.data.delete_url
+  };
+}
+
+async function createInstagramCarousel({
+  igUserId,
+  accessToken,
+  imageUrls,
+  caption = '',
+  publish = true
+}) {
+  if (!igUserId) {
+    throw new Error('igUserId is required for Instagram publishing');
+  }
+  if (!accessToken) {
+    throw new Error('instagramAccessToken is required for Instagram publishing');
+  }
+  if (!Array.isArray(imageUrls) || imageUrls.length < 2) {
+    throw new Error('At least 2 image URLs are required to create a carousel');
+  }
+
+  const children = [];
+  for (const imageUrl of imageUrls) {
+    const media = await graphRequest(`${igUserId}/media`, {
+      image_url: imageUrl,
+      is_carousel_item: 'true',
+      access_token: accessToken
+    });
+    children.push(media.id);
+  }
+
+  const carousel = await graphRequest(`${igUserId}/media`, {
+    media_type: 'CAROUSEL',
+    caption,
+    children: children.join(','),
+    access_token: accessToken
+  });
+
+  let published = null;
+  if (publish) {
+    published = await graphRequest(`${igUserId}/media_publish`, {
+      creation_id: carousel.id,
+      access_token: accessToken
+    });
+  }
+
+  return {
+    children,
+    carouselId: carousel.id,
+    publishId: published?.id || null,
+    published: Boolean(published)
   };
 }
 
@@ -360,7 +428,14 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 }
 
 app.post('/generate', async (req, res) => {
-  const { data, imgbbKey } = req.body;
+  const {
+    data,
+    imgbbKey,
+    instagramAccessToken,
+    instagramUserId,
+    caption,
+    publishToInstagram = false
+  } = req.body;
   if (!data) {
     return res.status(400).json({ error: 'data field is required' });
   }
@@ -401,6 +476,7 @@ app.post('/generate', async (req, res) => {
     const effectiveImgBBKey = imgbbKey || process.env.IMGBB_API_KEY;
     let uploads = [];
     let urls = [];
+    let instagram = null;
 
     if (effectiveImgBBKey) {
       console.log('[generate] uploading images to imgBB');
@@ -412,6 +488,17 @@ app.post('/generate', async (req, res) => {
       urls = uploads.map((item) => item.url);
     }
 
+    if (publishToInstagram) {
+      console.log('[generate] creating Instagram carousel');
+      instagram = await createInstagramCarousel({
+        igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
+        accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
+        imageUrls: urls,
+        caption: caption || normalized.caption || '',
+        publish: true
+      });
+    }
+
     console.log(`[generate] response sent in ${Date.now() - startedAt}ms`);
     res.json({
       count: images.length,
@@ -419,7 +506,8 @@ app.post('/generate', async (req, res) => {
       urls,
       uploads,
       html,
-      uploaded: urls.length
+      uploaded: urls.length,
+      instagram
     });
   } catch (err) {
     console.error('[generate] error:', err);
