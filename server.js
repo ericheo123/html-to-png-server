@@ -183,6 +183,23 @@ function parsePayload(raw) {
   return raw;
 }
 
+function inferIcon(...values) {
+  const text = values.filter(Boolean).join(' ').toLowerCase();
+  if (/자동차|차량|모빌리티/.test(text)) return '🚗';
+  if (/철강|알루미늄|공장|제조/.test(text)) return '🏭';
+  if (/주식|코스피|증시|투자/.test(text)) return '💹';
+  if (/환율|달러|원화|수출|무역/.test(text)) return '💱';
+  if (/물가|장바구니|식재료|수입품/.test(text)) return '🛒';
+  if (/기름|유가|전기|에너지/.test(text)) return '⛽';
+  if (/여행|항공|해외직구|직구/.test(text)) return '✈️';
+  if (/금리|대출|이자|은행/.test(text)) return '🏦';
+  if (/공급망|재편|생산/.test(text)) return '🔗';
+  if (/트럼프|재집권|정책|행정부/.test(text)) return '🏛️';
+  if (/원인|배경/.test(text)) return '🧾';
+  if (/확인|체크|주목/.test(text)) return '✅';
+  return '📌';
+}
+
 function mapStatsItems(items = []) {
   return items.slice(0, 3).map((item, index) => ({
     ico: ['', '', ''][index] || '',
@@ -196,7 +213,7 @@ function mapStatsItems(items = []) {
 
 function mapImpactItems(items = []) {
   return items.slice(0, 3).map((item) => ({
-    ico: item.ico || '',
+    ico: item.ico || inferIcon(item.label, item.value, item.desc),
     title: [item.label, item.value].filter(Boolean).join(' '),
     desc: item.desc || ''
   }));
@@ -214,7 +231,7 @@ function mapCauseItems(items = []) {
 
 function mapActionItems(items = []) {
   return items.slice(0, 4).map((item) => ({
-    ico: item.ico || '',
+    ico: item.ico || inferIcon(item.label, item.desc),
     title: item.label || '',
     desc: item.desc || ''
   }));
@@ -350,6 +367,8 @@ function buildHTML(d) {
   const c4 = d.card4 || { badge: '', title: '', items: [], warning: '' };
   const c5 = d.card5 || { badge: '', title: '', items: [], quote: '' };
   const c6 = d.card6 || { ico: '', title: '', desc: '', tags: [] };
+  const c2Lead = c2.items?.[0] || { label: '', val: '', desc: '' };
+  const c2Rest = c2.items?.slice(1) || [];
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -398,6 +417,11 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .slist{gap:28px}.ilist{gap:24px}.clist{gap:28px}.alist{gap:26px}
 .c3 .ilist,.c4 .clist,.c5 .alist{justify-content:flex-start;padding-top:8px}
 .si,.ii,.ci,.ai{border-radius:16px;border:1px solid var(--bo);background:rgba(255,255,255,0.03)}
+.shero{border-radius:24px;border:1px solid rgba(245,158,11,0.22);background:linear-gradient(180deg,rgba(245,158,11,0.08),rgba(255,255,255,0.03));padding:42px 46px;margin-bottom:26px}
+.shero-kicker{font-size:28px;font-weight:800;color:#fbbf24;margin-bottom:18px;letter-spacing:0.5px}
+.shero-val{font-size:88px;font-weight:900;color:var(--t);line-height:1.06;letter-spacing:-0.04em;margin-bottom:18px;word-break:keep-all}
+.shero-val em{color:var(--a);font-style:normal}
+.shero-desc{font-size:42px;color:var(--m2);line-height:1.52;font-weight:600;word-break:keep-all}
 .si{padding:36px 40px;display:flex;align-items:center;gap:24px}
 .si.hi{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.25)}
 .si-ico{font-size:48px;flex-shrink:0;min-width:60px}
@@ -453,7 +477,12 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 <div class="card c2" id="card-2">
   <div class="badge red">${c2.badge}</div>
   <div class="ctitle">${br(c2.title || '')}</div>
-  <div class="slist">${statItems(c2.items)}</div>
+  <div class="shero">
+    <div class="shero-kicker">${c2Lead.label || ''}</div>
+    <div class="shero-val">${c2Lead.val || ''}</div>
+    <div class="shero-desc">${br(c2Lead.desc || '')}</div>
+  </div>
+  <div class="slist">${statItems(c2Rest)}</div>
   ${footer(2)}
 </div>
 
