@@ -212,7 +212,8 @@ function mapStatsItems(items = []) {
 }
 
 function mapImpactItems(items = []) {
-  return items.slice(0, 3).map((item) => ({
+  return items.slice(0, 3).map((item, index) => ({
+    order: String(index + 1).padStart(2, '0'),
     ico: item.ico || inferIcon(item.label, item.value, item.desc),
     title: [item.label, item.value].filter(Boolean).join(' '),
     desc: item.desc || ''
@@ -251,6 +252,17 @@ function normalizeData(rawData) {
     const causes = byType.causes || {};
     const action = byType.action || {};
     const closing = byType.closing || {};
+    const fallbackMain =
+      cover.headline_main ||
+      parsed.topic ||
+      stats.title ||
+      impact.title ||
+      '오늘의 이슈';
+    const fallbackSub =
+      cover.headline_sub ||
+      cover.summary ||
+      parsed.topic ||
+      '지금 꼭 알아야 할 핵심만 정리했어요';
 
     return {
       date: parsed.date,
@@ -258,8 +270,8 @@ function normalizeData(rawData) {
       caption: parsed.caption || '',
       card1: {
         eyebrow: cover.eyebrow || parsed.topic || '',
-        hero: cover.headline_main || '',
-        hero2: cover.headline_sub || '',
+        hero: fallbackMain,
+        hero2: fallbackSub === fallbackMain ? (cover.summary || '지금 꼭 알아야 할 핵심만 정리했어요') : fallbackSub,
         sub: cover.summary || '',
         chips: cover.hashtags || []
       },
@@ -332,7 +344,7 @@ function buildHTML(d) {
     </div>`).join('');
   const impactItems = (arr = []) => arr.map((i, idx) => `
     <div class="ii${idx === 0 ? ' feature' : ''}">
-      <div class="ii-ico-wrap"><div class="ii-ico">${i.ico || ''}</div></div>
+      <div class="ii-ico-wrap"><div class="ii-ico">${i.order || ''}</div></div>
       <div>
         <div class="ii-t">${i.title || ''}</div>
         <div class="ii-d">${br(i.desc || '')}</div>
@@ -412,27 +424,29 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:var(--m2);font-size:var(--fs-label);font-weight:700;padding:14px 24px;border-radius:99px}
 .c2,.c3,.c4,.c5{padding:92px 96px 176px}
 .c3,.c4,.c5{padding:74px 88px 176px}
+.c2 .ctitle{font-size:92px;line-height:1.1;margin-bottom:28px;max-width:1260px}
 .c3 .ctitle,.c4 .ctitle,.c5 .ctitle{font-size:96px;line-height:1.14;margin-bottom:26px;max-width:1260px}
 .slist,.ilist,.clist,.alist{display:flex;flex-direction:column;flex:1;justify-content:center}
 .slist{gap:28px}.ilist{gap:24px}.clist{gap:28px}.alist{gap:26px}
+.c2 .slist{justify-content:flex-start;gap:22px}
 .c3 .ilist,.c4 .clist,.c5 .alist{justify-content:flex-start;padding-top:8px}
 .si,.ii,.ci,.ai{border-radius:16px;border:1px solid var(--bo);background:rgba(255,255,255,0.03)}
-.shero{border-radius:24px;border:1px solid rgba(245,158,11,0.22);background:linear-gradient(180deg,rgba(245,158,11,0.08),rgba(255,255,255,0.03));padding:42px 46px;margin-bottom:26px}
+.shero{border-radius:24px;border:1px solid rgba(245,158,11,0.22);background:linear-gradient(180deg,rgba(245,158,11,0.08),rgba(255,255,255,0.03));padding:42px 46px;margin-bottom:24px;min-height:320px;display:flex;flex-direction:column;justify-content:center}
 .shero-kicker{font-size:28px;font-weight:800;color:#fbbf24;margin-bottom:18px;letter-spacing:0.5px}
 .shero-val{font-size:88px;font-weight:900;color:var(--t);line-height:1.06;letter-spacing:-0.04em;margin-bottom:18px;word-break:keep-all}
 .shero-val em{color:var(--a);font-style:normal}
 .shero-desc{font-size:42px;color:var(--m2);line-height:1.52;font-weight:600;word-break:keep-all}
-.si{padding:36px 40px;display:flex;align-items:center;gap:24px}
+.si{padding:34px 38px;display:flex;align-items:center;gap:24px;min-height:210px}
 .si.hi{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.25)}
-.si-ico{font-size:48px;flex-shrink:0;min-width:60px}
+.si-ico{font-size:42px;flex-shrink:0;min-width:52px}
 .si-lbl{font-size:var(--fs-label);font-weight:700;color:var(--m);margin-bottom:10px}
-.si-val{font-size:var(--fs-h2);font-weight:900;color:var(--r);line-height:1.1}
+.si-val{font-size:72px;font-weight:900;color:var(--r);line-height:1.08;letter-spacing:-0.03em}
 .si-val.a{color:var(--a)}
-.si-desc{font-size:var(--fs-small);color:var(--m);margin-top:10px;font-weight:500;word-break:keep-all;line-height:1.6}
+.si-desc{font-size:34px;color:var(--m2);margin-top:10px;font-weight:600;word-break:keep-all;line-height:1.5}
 .ii{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:250px}
 .ii.feature,.ci.feature,.ai.feature{background:rgba(255,255,255,0.06);border-color:rgba(245,158,11,0.18)}
 .ii-ico-wrap,.c-n-wrap,.a-ico-wrap{width:96px;min-width:96px;height:96px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08)}
-.ii-ico{font-size:54px;line-height:1}
+.ii-ico{font-size:34px;line-height:1;font-weight:900;color:#f8fafc;letter-spacing:0.04em}
 .ii-t{font-size:70px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.12;word-break:keep-all;letter-spacing:-0.035em}
 .ii-d{font-size:38px;color:var(--m2);line-height:1.46;font-weight:600;word-break:keep-all}
 .ci{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:250px}
