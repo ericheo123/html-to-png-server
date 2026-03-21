@@ -24,6 +24,56 @@ async function graphRequest(path, params) {
   return payload;
 }
 
+async function graphGet(path, query) {
+  const url = new URL(`https://graph.instagram.com/v25.0/${path}`);
+  Object.entries(query || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  const response = await fetch(url.toString(), { method: 'GET' });
+  const payload = await response.json();
+  if (!response.ok || payload.error) {
+    const message = payload?.error?.message || `Instagram GET failed with status ${response.status}`;
+    throw new Error(message);
+  }
+
+  return payload;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForCreationId(mediaId, accessToken, attempts = 15, delayMs = 4000) {
+  let lastStatus = null;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const payload = await graphGet(mediaId, {
+      fields: 'status_code,status',
+      access_token: accessToken
+    });
+
+    const statusCode = payload.status_code || payload.status || null;
+    lastStatus = statusCode;
+
+    if (statusCode === 'FINISHED' || statusCode === 'PUBLISHED') {
+      return { ready: true, status: statusCode, attempts: attempt };
+    }
+
+    if (statusCode === 'ERROR' || statusCode === 'EXPIRED') {
+      throw new Error(`Instagram media processing failed with status ${statusCode}`);
+    }
+
+    if (attempt < attempts) {
+      await sleep(delayMs);
+    }
+  }
+
+  return { ready: false, status: lastStatus, attempts };
+}
+
 async function uploadToImgBB(base64Image, apiKey, name) {
   const params = new URLSearchParams();
   params.append('key', apiKey);
@@ -94,6 +144,11 @@ async function createInstagramCarousel({
 
   let published = null;
   if (publish) {
+    const readiness = await waitForCreationId(carousel.id, accessToken);
+    if (!readiness.ready) {
+      throw new Error(`Media ID is not available yet (last status: ${readiness.status || 'unknown'})`);
+    }
+
     published = await graphRequest(`${igUserId}/media_publish`, {
       creation_id: carousel.id,
       access_token: accessToken
