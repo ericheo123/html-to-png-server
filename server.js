@@ -313,25 +313,25 @@ function buildHTML(d) {
         <div class="si-desc">${br(i.desc || '')}</div>
       </div>
     </div>`).join('');
-  const impactItems = (arr = []) => arr.map((i) => `
-    <div class="ii">
-      <div class="ii-ico">${i.ico || ''}</div>
+  const impactItems = (arr = []) => arr.map((i, idx) => `
+    <div class="ii${idx === 0 ? ' feature' : ''}">
+      <div class="ii-ico-wrap"><div class="ii-ico">${i.ico || ''}</div></div>
       <div>
         <div class="ii-t">${i.title || ''}</div>
         <div class="ii-d">${br(i.desc || '')}</div>
       </div>
     </div>`).join('');
   const causeItems = (arr = []) => arr.map((i, idx) => `
-    <div class="ci${i.highlight || idx < 2 ? ' hi' : ''}">
-      <div class="c-n">${idx + 1}</div>
+    <div class="ci${i.highlight || idx < 2 ? ' hi' : ''}${idx === 0 ? ' feature' : ''}">
+      <div class="c-n-wrap"><div class="c-n">${i.title ? (i.title.match(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/u)?.[0] || idx + 1) : idx + 1}</div></div>
       <div>
         <div class="c-t">${i.title || ''}</div>
         <div class="c-d">${br(i.desc || '')}</div>
       </div>
     </div>`).join('');
-  const actionItems = (arr = []) => arr.map((i) => `
-    <div class="ai">
-      <div class="a-ico">${i.ico || ''}</div>
+  const actionItems = (arr = []) => arr.map((i, idx) => `
+    <div class="ai${idx === 0 ? ' feature' : ''}">
+      <div class="a-ico-wrap"><div class="a-ico">${i.ico || ''}</div></div>
       <div>
         <div class="a-t">${i.title || ''}</div>
         <div class="a-d">${br(i.desc || '')}</div>
@@ -356,11 +356,11 @@ function buildHTML(d) {
 <head>
 <meta charset="UTF-8">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Color+Emoji&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --font:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
-  --font-display:'Black Han Sans','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
+  --font:'Noto Sans KR','Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
+  --font-display:'Black Han Sans','Noto Sans KR','Noto Color Emoji','Apple Color Emoji','Segoe UI Emoji','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
   --a:#f59e0b;--r:#ef4444;--g:#22c55e;
   --bg:#111827;--bo:rgba(255,255,255,0.08);--t:#fff;
   --m:rgba(255,255,255,0.58);--m2:rgba(255,255,255,0.78);
@@ -392,8 +392,11 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .chips,.ctags{display:flex;gap:16px;flex-wrap:wrap}
 .chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:var(--m2);font-size:var(--fs-label);font-weight:700;padding:14px 24px;border-radius:99px}
 .c2,.c3,.c4,.c5{padding:92px 96px 176px}
+.c3,.c4,.c5{padding:74px 88px 176px}
+.c3 .ctitle,.c4 .ctitle,.c5 .ctitle{font-size:96px;line-height:1.14;margin-bottom:26px;max-width:1260px}
 .slist,.ilist,.clist,.alist{display:flex;flex-direction:column;flex:1;justify-content:center}
-.slist{gap:28px}.ilist{gap:20px}.clist{gap:26px}.alist{gap:24px}
+.slist{gap:28px}.ilist{gap:24px}.clist{gap:28px}.alist{gap:26px}
+.c3 .ilist,.c4 .clist,.c5 .alist{justify-content:flex-start;padding-top:8px}
 .si,.ii,.ci,.ai{border-radius:16px;border:1px solid var(--bo);background:rgba(255,255,255,0.03)}
 .si{padding:36px 40px;display:flex;align-items:center;gap:24px}
 .si.hi{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.25)}
@@ -402,21 +405,23 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .si-val{font-size:var(--fs-h2);font-weight:900;color:var(--r);line-height:1.1}
 .si-val.a{color:var(--a)}
 .si-desc{font-size:var(--fs-small);color:var(--m);margin-top:10px;font-weight:500;word-break:keep-all;line-height:1.6}
-.ii{padding:28px 32px;display:flex;gap:18px;align-items:flex-start}
-.ii-ico{font-size:40px;flex-shrink:0;padding-top:2px;min-width:60px}
-.ii-t{font-size:var(--fs-h3);font-weight:900;color:var(--t);margin-bottom:5px;line-height:1.2;word-break:keep-all}
-.ii-d{font-size:30px;color:var(--m);line-height:1.58;font-weight:500;word-break:keep-all}
-.ci{padding:32px 36px;display:flex;gap:20px;align-items:flex-start}
+.ii{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:250px}
+.ii.feature,.ci.feature,.ai.feature{background:rgba(255,255,255,0.06);border-color:rgba(245,158,11,0.18)}
+.ii-ico-wrap,.c-n-wrap,.a-ico-wrap{width:96px;min-width:96px;height:96px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08)}
+.ii-ico{font-size:54px;line-height:1}
+.ii-t{font-size:70px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.12;word-break:keep-all;letter-spacing:-0.035em}
+.ii-d{font-size:38px;color:var(--m2);line-height:1.46;font-weight:600;word-break:keep-all}
+.ci{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:250px}
 .ci.hi{border-color:rgba(239,68,68,0.28);background:rgba(239,68,68,0.05)}
-.c-n{width:56px;height:56px;border-radius:50%;background:var(--r);color:#fff;font-size:24px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.c-t{font-size:var(--fs-h3);font-weight:900;color:var(--t);margin-bottom:7px;line-height:1.2;word-break:keep-all}
-.c-d{font-size:30px;color:var(--m);line-height:1.58;font-weight:500;word-break:keep-all}
+.c-n{width:72px;height:72px;border-radius:20px;background:rgba(239,68,68,0.12);color:#fff;font-size:42px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.c-t{font-size:72px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.1;word-break:keep-all;letter-spacing:-0.04em}
+.c-d{font-size:38px;color:var(--m2);line-height:1.46;font-weight:600;word-break:keep-all}
 .ws{background:rgba(245,158,11,0.08);border-left:5px solid var(--a);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#fde68a;line-height:1.65;font-weight:500;word-break:keep-all;margin-top:8px}
 .ws strong{color:var(--a);font-weight:900}
-.ai{padding:28px 32px;display:flex;gap:18px;align-items:flex-start}
-.a-ico{font-size:40px;flex-shrink:0;padding-top:2px;min-width:60px}
-.a-t{font-size:var(--fs-h3);font-weight:900;color:var(--t);margin-bottom:6px;line-height:1.2;word-break:keep-all}
-.a-d{font-size:30px;color:var(--m);line-height:1.58;font-weight:500;word-break:keep-all}
+.ai{padding:40px 42px;display:flex;gap:24px;align-items:flex-start;min-height:224px}
+.a-ico{font-size:54px;line-height:1}
+.a-t{font-size:72px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.1;word-break:keep-all;letter-spacing:-0.04em}
+.a-d{font-size:38px;color:var(--m2);line-height:1.46;font-weight:600;word-break:keep-all}
 .gq{background:rgba(34,197,94,0.07);border-left:5px solid var(--g);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#86efac;line-height:1.65;margin-top:12px;font-weight:600;word-break:keep-all}
 .c6{background:linear-gradient(155deg,#1a0000 0%,#2d0500 45%,#080c14 100%);justify-content:center;align-items:center;text-align:center;padding:104px 112px 176px}
 .c6 .g1{position:absolute;width:650px;height:650px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,0.18) 0%,transparent 62%);top:-200px;left:50%;transform:translateX(-50%)}
@@ -427,6 +432,7 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .c6 .fd{font-size:42px;color:var(--m);line-height:1.8;margin-bottom:44px;font-weight:500;word-break:keep-all}
 .c6 .fd strong{color:var(--a);font-weight:900}
 .ctag{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#fca5a5;font-size:var(--fs-label);font-weight:700;padding:14px 28px;border-radius:99px}
+.c6 .ico,.c6 .ft,.c6 .fd,.ctag,.chip,.si-lbl,.si-val,.si-desc,.ii-t,.ii-d,.c-t,.c-d,.a-t,.a-d{font-family:var(--font)}
 </style>
 </head>
 <body>
