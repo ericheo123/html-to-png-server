@@ -73,15 +73,17 @@ async function createInstagramCarousel({
     throw new Error('At least 2 image URLs are required to create a carousel');
   }
 
-  const children = [];
-  for (const imageUrl of imageUrls) {
-    const media = await graphRequest(`${igUserId}/media`, {
-      image_url: imageUrl,
-      is_carousel_item: 'true',
-      access_token: accessToken
-    });
-    children.push(media.id);
-  }
+  const mediaItems = await Promise.all(
+    imageUrls.map((imageUrl) =>
+      graphRequest(`${igUserId}/media`, {
+        image_url: imageUrl,
+        is_carousel_item: 'true',
+        access_token: accessToken
+      })
+    )
+  );
+
+  const children = mediaItems.map((media) => media.id);
 
   const carousel = await graphRequest(`${igUserId}/media`, {
     media_type: 'CAROUSEL',
@@ -434,7 +436,8 @@ app.post('/generate', async (req, res) => {
     instagramAccessToken,
     instagramUserId,
     caption,
-    publishToInstagram = false
+    publishToInstagram = false,
+    includeDebugAssets = false
   } = req.body;
   if (!data) {
     return res.status(400).json({ error: 'data field is required' });
@@ -500,15 +503,23 @@ app.post('/generate', async (req, res) => {
     }
 
     console.log(`[generate] response sent in ${Date.now() - startedAt}ms`);
-    res.json({
+    const response = {
       count: images.length,
-      images,
-      urls,
-      uploads,
-      html,
       uploaded: urls.length,
       instagram
-    });
+    };
+
+    if (includeDebugAssets) {
+      response.images = images;
+      response.urls = urls;
+      response.uploads = uploads;
+      response.html = html;
+    } else {
+      response.urls = urls;
+      response.uploads = uploads;
+    }
+
+    res.json(response);
   } catch (err) {
     console.error('[generate] error:', err);
     res.status(500).json({ error: err.message });
