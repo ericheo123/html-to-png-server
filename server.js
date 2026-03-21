@@ -185,6 +185,7 @@ function normalizeData(rawData) {
       topic: parsed.topic || '',
       caption: parsed.caption || '',
       card1: {
+        eyebrow: cover.eyebrow || parsed.topic || '',
         hero: cover.headline_main || '',
         hero2: cover.headline_sub || '',
         sub: cover.summary || '',
@@ -288,7 +289,7 @@ function buildHTML(d) {
       <span class="bb-date">${today}</span>
     </div>`;
 
-  const c1 = d.card1 || { hero: '', hero2: '', sub: '', chips: [] };
+  const c1 = d.card1 || { eyebrow: '', hero: '', hero2: '', sub: '', chips: [] };
   const c2 = d.card2 || { badge: '', title: '', items: [] };
   const c3 = d.card3 || { badge: '', title: '', items: [] };
   const c4 = d.card4 || { badge: '', title: '', items: [], warning: '' };
@@ -300,10 +301,11 @@ function buildHTML(d) {
 <head>
 <meta charset="UTF-8">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --font:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
+  --font-display:'Black Han Sans','Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo','Nanum Gothic',sans-serif;
   --a:#f59e0b;--r:#ef4444;--g:#22c55e;
   --bg:#111827;--bo:rgba(255,255,255,0.08);--t:#fff;
   --m:rgba(255,255,255,0.58);--m2:rgba(255,255,255,0.78);
@@ -325,11 +327,13 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 .c1 .g1{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,0.25) 0%,transparent 62%);top:-220px;right:-200px}
 .c1 .grid,.c6 .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(239,68,68,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(239,68,68,0.04) 1px,transparent 1px);background-size:100px 100px}
 .c1 .inner,.c6 .inner{position:relative;z-index:1}
-.c1 .hero{font-size:var(--fs-hero);font-weight:900;color:var(--r);line-height:0.88;letter-spacing:-2px;margin-bottom:16px;text-shadow:0 0 100px rgba(239,68,68,0.6)}
-.c1 .hero2{font-size:112px;font-weight:900;color:var(--t);line-height:1.18;margin-bottom:48px;word-break:keep-all}
+.c1 .eyebrow{display:inline-flex;align-items:center;gap:14px;padding:16px 24px;border:1px solid rgba(245,158,11,0.35);background:rgba(245,158,11,0.08);border-radius:999px;color:#fcd34d;font-size:28px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:32px}
+.c1 .eyebrow::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--a);box-shadow:0 0 18px rgba(245,158,11,0.8)}
+.c1 .hero{font-family:var(--font-display);font-size:var(--fs-hero);font-weight:400;color:#ff5a5a;line-height:0.92;letter-spacing:-3px;margin-bottom:18px;text-shadow:0 0 100px rgba(239,68,68,0.55)}
+.c1 .hero2{font-size:112px;font-weight:900;color:var(--t);line-height:1.1;margin-bottom:42px;word-break:keep-all;letter-spacing:-0.04em;max-width:1200px}
 .c1 .hero2 em{color:var(--a);font-style:normal}
-.c1 .bar{width:128px;height:12px;background:var(--r);border-radius:6px;margin-bottom:48px}
-.c1 .sub{font-size:var(--fs-body);color:var(--m);line-height:1.8;margin-bottom:48px;font-weight:500;word-break:keep-all}
+.c1 .bar{width:168px;height:12px;background:linear-gradient(90deg,var(--r),var(--a));border-radius:6px;margin-bottom:40px}
+.c1 .sub{font-size:var(--fs-body);color:var(--m2);line-height:1.72;margin-bottom:48px;font-weight:600;word-break:keep-all;max-width:1160px}
 .chips,.ctags{display:flex;gap:16px;flex-wrap:wrap}
 .chip{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.14);color:var(--m2);font-size:var(--fs-label);font-weight:700;padding:14px 24px;border-radius:99px}
 .c2,.c3,.c4,.c5{padding:92px 96px 176px}
@@ -375,6 +379,7 @@ body{background:#080c14;font-family:var(--font);padding:80px 32px;display:flex;f
 <div class="card c1" id="card-1">
   <div class="g1"></div><div class="grid"></div>
   <div class="inner">
+    <div class="eyebrow">${c1.eyebrow || ''}</div>
     <div class="hero">${c1.hero}</div>
     <div class="hero2">${br(c1.hero2 || '')}</div>
     <div class="bar"></div>
