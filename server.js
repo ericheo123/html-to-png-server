@@ -446,8 +446,6 @@ function buildHTML(d) {
       <span class="bb-no">${String(num).padStart(2, '0')} / 06</span>
       <span class="bb-date">${today}</span>
     </div>`;
-  const warningBlock = c4.warning ? `<div class="ws">${c4.warning}</div>` : '';
-  const quoteBlock = c5.quote ? `<div class="gq">${c5.quote}</div>` : '';
 
   const c1 = d.card1 || { eyebrow: '', hero: '', hero2: '', sub: '', chips: [] };
   const c2 = d.card2 || { badge: '', title: '', items: [] };
@@ -457,6 +455,8 @@ function buildHTML(d) {
   const c6 = d.card6 || { ico: '', title: '', desc: '', tags: [] };
   const c2Lead = c2.hero || { label: '', title: '', desc: '' };
   const c2Rest = c2.items || [];
+  const warningBlock = c4.warning ? `<div class="ws">${c4.warning}</div>` : '';
+  const quoteBlock = c5.quote ? `<div class="gq">${c5.quote}</div>` : '';
 
   return `<!DOCTYPE html>
 <html lang="ko">
