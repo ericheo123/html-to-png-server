@@ -183,43 +183,93 @@ function parsePayload(raw) {
   return raw;
 }
 
-function inferIcon(...values) {
+function iconCandidates(...values) {
   const text = values.filter(Boolean).join(' ').toLowerCase();
-  if (/자동차|차량|모빌리티/.test(text)) return '🚗';
-  if (/철강|알루미늄|공장|제조/.test(text)) return '🏭';
-  if (/주식|코스피|증시|투자/.test(text)) return '💹';
-  if (/환율|달러|원화|수출|무역/.test(text)) return '💱';
-  if (/물가|장바구니|식재료|수입품/.test(text)) return '🛒';
-  if (/기름|유가|전기|에너지/.test(text)) return '⛽';
-  if (/여행|항공|해외직구|직구/.test(text)) return '✈️';
-  if (/금리|대출|이자|은행/.test(text)) return '🏦';
-  if (/공급망|재편|생산/.test(text)) return '🔗';
-  if (/트럼프|재집권|정책|행정부/.test(text)) return '🏛️';
-  if (/원인|배경/.test(text)) return '🧾';
-  if (/확인|체크|주목/.test(text)) return '✅';
-  return '📌';
+  if (/자동차|차량|모빌리티/.test(text)) return ['🚗', '🚙', '🛻'];
+  if (/철강|알루미늄|공장|제조/.test(text)) return ['🏭', '⚙️', '🧱'];
+  if (/주식|코스피|증시|투자/.test(text)) return ['📈', '💹', '📊'];
+  if (/환율|달러|원화|무역/.test(text)) return ['💱', '💵', '🌍'];
+  if (/수출/.test(text)) return ['📦', '🚢', '💱'];
+  if (/물가|장바구니|식재료|수입품/.test(text)) return ['🛒', '🥖', '🧺'];
+  if (/기름|유가|전기|에너지/.test(text)) return ['⛽', '⚡', '🛢️'];
+  if (/여행|항공|해외직구|직구/.test(text)) return ['✈️', '🧳', '🌐'];
+  if (/금리|대출|이자|은행/.test(text)) return ['🏦', '💳', '🏠'];
+  if (/공급망|재편|생산/.test(text)) return ['🔗', '🏗️', '📦'];
+  if (/트럼프|재집권|정책|행정부|의회|정부/.test(text)) return ['🏛️', '🧾', '⚖️'];
+  if (/원인|배경/.test(text)) return ['🧾', '🔎', '📌'];
+  if (/확인|체크|주목/.test(text)) return ['✅', '👀', '📍'];
+  return ['📌', '✨', '🔹'];
+}
+
+function inferIcon(...values) {
+  return iconCandidates(...values)[0];
+}
+
+function pickUniqueIcons(items = [], resolver, fallbackIcons = []) {
+  const used = new Set();
+
+  return items.map((item, index) => {
+    const candidates = [...iconCandidates(item?.label, item?.value, item?.desc), ...fallbackIcons];
+
+    const choice =
+      candidates.find((candidate) => candidate && !used.has(candidate)) ||
+      candidates.find(Boolean) ||
+      fallbackIcons.find((candidate) => candidate && !used.has(candidate)) ||
+      fallbackIcons[0] ||
+      resolver(item, index);
+
+    used.add(choice);
+    return choice;
+  });
 }
 
 function highlightText(value = '') {
   const text = String(value || '');
   if (!text) return '';
-
-  const patterns = [
-    /((?:최대|약)?\s?\d[\d,.]*(?:%|%p|배|배수|원|만원|억원|조 원|조원|달러|년|개월|일|주|개)?(?:대)?)/g,
-    /(관세|환율|수출|물가|금리|달러|원화|자동차|철강|반도체|에너지|장바구니|대출|코스피|GDP|적자|흑자|직격탄|충격|상승|하락|급등|급락)/g
-  ];
-
-  let result = text;
-  patterns.forEach((pattern) => {
-    result = result.replace(pattern, '<em class="hl">$1</em>');
+  let count = 0;
+  return text.replace(/\[\[(.+?)\]\]/g, (_, inner) => {
+    if (inner.length > 12) {
+      return inner;
+    }
+    if (count >= 2) {
+      return inner;
+    }
+    count += 1;
+    return `<em class="hl">${inner}</em>`;
   });
+}
 
-  return result;
+function normalizeStats(stats = {}) {
+  const items = Array.isArray(stats.items) ? stats.items : [];
+  const hero = stats.hero;
+
+  if (hero) {
+    return {
+      hero: {
+        label: hero.label || '',
+        title: hero.title || hero.value || hero.val || '',
+        desc: hero.desc || ''
+      },
+      items: items.slice(0, 3)
+    };
+  }
+
+  return {
+    hero: {
+      label: items[0]?.label || '',
+      title: items[0]?.value || items[0]?.val || '',
+      desc: items[0]?.desc || ''
+    },
+    items: items.slice(1, 4)
+  };
 }
 
 function mapStatsItems(items = []) {
-  return items.slice(0, 3).map((item, index) => ({
-    ico: ['', '', ''][index] || '',
+  const rows = items.slice(0, 3);
+  const icons = pickUniqueIcons(rows, () => '📌', ['📘', '📈', '🚨', '🧭']);
+
+  return rows.map((item, index) => ({
+    ico: icons[index] || '',
     label: item.label || '',
     val: item.value || item.val || '',
     desc: item.desc || '',
@@ -229,9 +279,11 @@ function mapStatsItems(items = []) {
 }
 
 function mapImpactItems(items = []) {
-  return items.slice(0, 3).map((item, index) => ({
-    order: String(index + 1).padStart(2, '0'),
-    ico: item.ico || inferIcon(item.label, item.value, item.desc),
+  const rows = items.slice(0, 4);
+  const icons = pickUniqueIcons(rows, () => '📌', ['🛒', '⛽', '✈️', '🏦', '📦', '💱']);
+
+  return rows.map((item, index) => ({
+    ico: icons[index] || inferIcon(item.label, item.value, item.desc),
     title: [item.label, item.value].filter(Boolean).join(' '),
     desc: item.desc || ''
   }));
@@ -248,9 +300,11 @@ function mapCauseItems(items = []) {
 }
 
 function mapActionItems(items = []) {
-  return items.slice(0, 4).map((item, index) => ({
-    order: String(index + 1).padStart(2, '0'),
-    ico: item.ico || inferIcon(item.label, item.desc),
+  const rows = items.slice(0, 4);
+  const icons = pickUniqueIcons(rows, () => '✅', ['💵', '✈️', '🏠', '📊', '🛒']);
+
+  return rows.map((item, index) => ({
+    ico: icons[index] || inferIcon(item.label, item.desc),
     title: item.label || '',
     desc: item.desc || ''
   }));
@@ -270,6 +324,7 @@ function normalizeData(rawData) {
     const causes = byType.causes || {};
     const action = byType.action || {};
     const closing = byType.closing || {};
+    const normalizedStats = normalizeStats(stats);
     const fallbackMain =
       cover.headline_main ||
       parsed.topic ||
@@ -296,7 +351,8 @@ function normalizeData(rawData) {
       card2: {
         badge: stats.eyebrow || '',
         title: stats.title || '',
-        items: mapStatsItems(stats.items)
+        hero: normalizedStats.hero,
+        items: mapStatsItems(normalizedStats.items)
       },
       card3: {
         badge: impact.eyebrow || '',
@@ -324,7 +380,7 @@ function normalizeData(rawData) {
     };
   }
 
-  return parsed;
+  throw new Error('Invalid cards structure');
 }
 
 async function getBrowser() {
@@ -362,7 +418,7 @@ function buildHTML(d) {
     </div>`).join('');
   const impactItems = (arr = []) => arr.map((i, idx) => `
     <div class="ii${idx === 0 ? ' feature' : ''}">
-      <div class="ii-ico-wrap"><div class="ii-ico">${i.order || ''}</div></div>
+      <div class="ii-ico-wrap"><div class="ii-ico">${i.ico || '📌'}</div></div>
       <div>
         <div class="ii-t">${highlightText(i.title || '')}</div>
         <div class="ii-d">${highlightText(br(i.desc || ''))}</div>
@@ -378,7 +434,7 @@ function buildHTML(d) {
     </div>`).join('');
   const actionItems = (arr = []) => arr.map((i, idx) => `
     <div class="ai${idx === 0 ? ' feature' : ''}">
-      <div class="a-ico-wrap"><div class="a-ico">${i.order || ''}</div></div>
+      <div class="a-ico-wrap"><div class="a-ico">${i.ico || '✅'}</div></div>
       <div>
         <div class="a-t">${highlightText(i.title || '')}</div>
         <div class="a-d">${highlightText(br(i.desc || ''))}</div>
@@ -390,6 +446,8 @@ function buildHTML(d) {
       <span class="bb-no">${String(num).padStart(2, '0')} / 06</span>
       <span class="bb-date">${today}</span>
     </div>`;
+  const warningBlock = c4.warning ? `<div class="ws">${c4.warning}</div>` : '';
+  const quoteBlock = c5.quote ? `<div class="gq">${c5.quote}</div>` : '';
 
   const c1 = d.card1 || { eyebrow: '', hero: '', hero2: '', sub: '', chips: [] };
   const c2 = d.card2 || { badge: '', title: '', items: [] };
@@ -397,8 +455,8 @@ function buildHTML(d) {
   const c4 = d.card4 || { badge: '', title: '', items: [], warning: '' };
   const c5 = d.card5 || { badge: '', title: '', items: [], quote: '' };
   const c6 = d.card6 || { ico: '', title: '', desc: '', tags: [] };
-  const c2Lead = c2.items?.[0] || { label: '', val: '', desc: '' };
-  const c2Rest = c2.items?.slice(1) || [];
+  const c2Lead = c2.hero || { label: '', title: '', desc: '' };
+  const c2Rest = c2.items || [];
 
   return `<!DOCTYPE html>
 <html lang="ko">
@@ -445,37 +503,37 @@ body{background:#080c14;font-family:var(--font);padding:48px 24px;display:flex;f
 .c3,.c4,.c5{padding:64px 76px 132px}
 .c2 .ctitle{font-size:108px;line-height:1.04;margin-bottom:28px;max-width:1380px}
 .c3 .ctitle,.c4 .ctitle,.c5 .ctitle{font-size:112px;line-height:1.06;margin-bottom:28px;max-width:1380px}
-.slist,.ilist,.clist,.alist{display:flex;flex-direction:column;flex:1;justify-content:space-between}
-.slist{gap:28px}.ilist{gap:24px}.clist{gap:28px}.alist{gap:26px}
-.c2 .slist{justify-content:space-between;gap:22px}
-.c3 .ilist,.c4 .clist,.c5 .alist{justify-content:space-between;padding-top:4px;padding-bottom:4px}
+.slist,.ilist,.clist,.alist{display:flex;flex-direction:column;flex:1}
+.slist{gap:22px}.ilist{gap:26px}.clist{gap:26px}.alist{gap:24px}
+.c2 .slist{gap:18px}
+.c3 .ilist,.c4 .clist,.c5 .alist{padding-top:0;padding-bottom:0}
 .si,.ii,.ci,.ai{border-radius:16px;border:1px solid var(--bo);background:rgba(255,255,255,0.03)}
-.shero{border-radius:24px;border:1px solid rgba(245,158,11,0.22);background:linear-gradient(180deg,rgba(245,158,11,0.08),rgba(255,255,255,0.03));padding:42px 46px;margin-bottom:24px;min-height:330px;display:flex;flex-direction:column;justify-content:center}
+.shero{border-radius:24px;border:1px solid rgba(245,158,11,0.22);background:linear-gradient(180deg,rgba(245,158,11,0.08),rgba(255,255,255,0.03));padding:42px 46px;margin-bottom:22px;min-height:312px;display:flex;flex-direction:column;justify-content:center}
 .shero-kicker{font-size:32px;font-weight:800;color:#fbbf24;margin-bottom:18px;letter-spacing:0.5px}
 .shero-val{font-size:98px;font-weight:900;color:var(--t);line-height:1.04;letter-spacing:-0.045em;margin-bottom:18px;word-break:keep-all}
 .shero-val em{color:var(--a);font-style:normal}
 .shero-desc{font-size:48px;color:var(--m2);line-height:1.48;font-weight:600;word-break:keep-all}
-.si{padding:34px 38px;display:flex;align-items:center;gap:24px;min-height:220px}
+.si{padding:32px 36px;display:flex;align-items:center;gap:22px;min-height:196px}
 .si.hi{background:rgba(239,68,68,0.07);border-color:rgba(239,68,68,0.25)}
 .si-ico{font-size:42px;flex-shrink:0;min-width:52px}
 .si-lbl{font-size:34px;font-weight:700;color:var(--m);margin-bottom:10px}
 .si-val{font-size:80px;font-weight:900;color:var(--r);line-height:1.06;letter-spacing:-0.04em}
 .si-val.a{color:var(--a)}
 .si-desc{font-size:38px;color:var(--m2);margin-top:10px;font-weight:600;word-break:keep-all;line-height:1.46}
-.ii{padding:38px 40px;display:flex;gap:24px;align-items:flex-start;min-height:248px}
+.ii{padding:30px 34px;display:flex;gap:20px;align-items:flex-start;min-height:188px}
 .ii.feature,.ci.feature,.ai.feature{background:rgba(255,255,255,0.06);border-color:rgba(245,158,11,0.18)}
 .ii-ico-wrap,.c-n-wrap,.a-ico-wrap{width:96px;min-width:96px;height:96px;border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.06));display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.06)}
-.ii-ico{font-size:34px;line-height:1;font-weight:900;color:#f8fafc;letter-spacing:0.04em}
-.ii-t{font-size:78px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.08;word-break:keep-all;letter-spacing:-0.04em}
-.ii-d{font-size:42px;color:var(--m2);line-height:1.42;font-weight:600;word-break:keep-all}
-.ci{padding:38px 40px;display:flex;gap:24px;align-items:flex-start;min-height:248px}
+.ii-ico{font-size:48px;line-height:1}
+.ii-t{font-size:68px;font-weight:900;color:var(--t);margin-bottom:8px;line-height:1.08;word-break:keep-all;letter-spacing:-0.04em}
+.ii-d{font-size:36px;color:var(--m2);line-height:1.4;font-weight:600;word-break:keep-all}
+.ci{padding:34px 38px;display:flex;gap:22px;align-items:flex-start;min-height:220px}
 .ci.hi{border-color:rgba(239,68,68,0.28);background:rgba(239,68,68,0.05)}
 .c-n{width:72px;height:72px;border-radius:20px;background:rgba(245,158,11,0.12);color:#fbbf24;font-size:34px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;letter-spacing:0.04em}
 .c-t{font-size:80px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.08;word-break:keep-all;letter-spacing:-0.045em}
 .c-d{font-size:42px;color:var(--m2);line-height:1.42;font-weight:600;word-break:keep-all}
-.ws{background:rgba(245,158,11,0.08);border-left:5px solid var(--a);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#fde68a;line-height:1.65;font-weight:500;word-break:keep-all;margin-top:8px}
+.ws{background:rgba(245,158,11,0.08);border-left:5px solid var(--a);border-radius:0 12px 12px 0;padding:24px 28px;font-size:30px;color:#fde68a;line-height:1.65;font-weight:500;word-break:keep-all;margin-top:18px}
 .ws strong{color:var(--a);font-weight:900}
-.ai{padding:38px 40px;display:flex;gap:24px;align-items:flex-start;min-height:230px}
+.ai{padding:34px 38px;display:flex;gap:22px;align-items:flex-start;min-height:212px}
 .a-ico{font-size:34px;line-height:1;font-weight:900;color:#fbbf24;letter-spacing:0.04em}
 .a-t{font-size:80px;font-weight:900;color:var(--t);margin-bottom:10px;line-height:1.08;word-break:keep-all;letter-spacing:-0.045em}
 .a-d{font-size:42px;color:var(--m2);line-height:1.42;font-weight:600;word-break:keep-all}
@@ -512,7 +570,7 @@ body{background:#080c14;font-family:var(--font);padding:48px 24px;display:flex;f
   <div class="ctitle">${highlightText(br(c2.title || ''))}</div>
   <div class="shero">
     <div class="shero-kicker">${c2Lead.label || ''}</div>
-    <div class="shero-val">${highlightText(c2Lead.val || '')}</div>
+    <div class="shero-val">${highlightText(c2Lead.title || c2Lead.val || '')}</div>
     <div class="shero-desc">${highlightText(br(c2Lead.desc || ''))}</div>
   </div>
   <div class="slist">${statItems(c2Rest)}</div>
@@ -530,7 +588,7 @@ body{background:#080c14;font-family:var(--font);padding:48px 24px;display:flex;f
   <div class="badge red">${c4.badge}</div>
   <div class="ctitle">${highlightText(br(c4.title || ''))}</div>
   <div class="clist">${causeItems(c4.items)}</div>
-  <div class="ws">${c4.warning || ''}</div>
+  ${warningBlock}
   ${footer(4)}
 </div>
 
@@ -538,7 +596,7 @@ body{background:#080c14;font-family:var(--font);padding:48px 24px;display:flex;f
   <div class="badge grn">${c5.badge}</div>
   <div class="ctitle">${highlightText(br(c5.title || ''))}</div>
   <div class="alist">${actionItems(c5.items)}</div>
-  <div class="gq">${c5.quote || ''}</div>
+  ${quoteBlock}
   ${footer(5)}
 </div>
 
@@ -589,7 +647,7 @@ app.post('/generate', async (req, res) => {
       timeout: 60000
     });
 
-    await new Promise((r) => setTimeout(r, 400));
+    await page.waitForSelector('#card-6', { timeout: 60000 });
 
     const images = [];
     for (let i = 1; i <= 6; i += 1) {
