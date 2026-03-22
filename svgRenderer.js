@@ -243,12 +243,14 @@ function renderSupportCards(items) {
   const height = 170;
   return items.slice(0, 3).map((item, index) => {
     const y = startY + index * (height + gap);
-    const title = [item.label, item.val].filter(Boolean).join(' ');
+    const title = item.val || item.label || '';
+    const eyebrow = item.label && item.label !== title ? item.label : '';
     return `
       ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height, fill: index === 0 ? CARD_ALT : CARD_BG, radius: 22 })}
       <text x="${SIDE + 28}" y="${y + 54}" font-family="'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI Emoji',sans-serif" font-size="34">${esc(item.ico || '📌')}</text>
-      ${textBlock({ x: SIDE + 82, y: y + 24, text: title, width: WIDTH - SIDE * 2 - 110, fontSize: 46, lineHeight: 50, fill: index === 2 ? YELLOW : WHITE, weight: 900, maxLines: 2 })}
-      ${multilinePlainText({ x: SIDE + 82, y: y + 98, text: item.desc || '', width: WIDTH - SIDE * 2 - 110, fontSize: 24, lineHeight: 32, fill: MUTED, weight: 600, maxLines: 2 })}
+      ${eyebrow ? textBlock({ x: SIDE + 82, y: y + 18, text: eyebrow, width: WIDTH - SIDE * 2 - 110, fontSize: 18, lineHeight: 22, fill: MUTED_SOFT, weight: 800, maxLines: 1 }) : ''}
+      ${textBlock({ x: SIDE + 82, y: y + (eyebrow ? 42 : 24), text: title, width: WIDTH - SIDE * 2 - 110, fontSize: 44, lineHeight: 48, fill: index === 2 ? YELLOW : WHITE, weight: 900, maxLines: 2 })}
+      ${multilinePlainText({ x: SIDE + 82, y: y + (eyebrow ? 108 : 98), text: item.desc || '', width: WIDTH - SIDE * 2 - 110, fontSize: 24, lineHeight: 32, fill: MUTED, weight: 600, maxLines: 2 })}
     `;
   }).join('');
 }
@@ -265,8 +267,9 @@ function renderImpact(card, date) {
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 164, fill: CARD_BG, radius: 22 })}
         <rect x="${SIDE + 22}" y="${y + 34}" width="66" height="66" rx="18" fill="rgba(255,255,255,0.08)" />
         <text x="${SIDE + 55}" y="${y + 79}" text-anchor="middle" font-family="'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI Emoji',sans-serif" font-size="34">${esc(item.ico || '📌')}</text>
-        ${textBlock({ x: SIDE + 106, y: y + 26, text: item.title || '', width: WIDTH - SIDE * 2 - 136, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 900, maxLines: 2 })}
-        ${multilinePlainText({ x: SIDE + 106, y: y + 92, text: item.desc || '', width: WIDTH - SIDE * 2 - 136, fontSize: 23, lineHeight: 30, fill: MUTED, weight: 600, maxLines: 2 })}
+        ${item.label && item.label !== item.title ? textBlock({ x: SIDE + 106, y: y + 18, text: item.label, width: WIDTH - SIDE * 2 - 136, fontSize: 18, lineHeight: 22, fill: MUTED_SOFT, weight: 800, maxLines: 1 }) : ''}
+        ${textBlock({ x: SIDE + 106, y: y + (item.label && item.label !== item.title ? 42 : 26), text: item.title || '', width: WIDTH - SIDE * 2 - 136, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 900, maxLines: 2 })}
+        ${multilinePlainText({ x: SIDE + 106, y: y + (item.label && item.label !== item.title ? 96 : 92), text: item.desc || '', width: WIDTH - SIDE * 2 - 136, fontSize: 23, lineHeight: 30, fill: MUTED, weight: 600, maxLines: 2 })}
       `;
     }).join('')}
     ${footer(3, date)}
