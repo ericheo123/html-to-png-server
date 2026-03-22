@@ -1,5 +1,6 @@
 const express = require('express');
 const puppeteer = require('puppeteer');
+const { renderCardsWithSvg } = require('./svgRenderer');
 
 const app = express();
 app.use(express.json({ limit: '20mb' }));
@@ -436,6 +437,48 @@ async function getBrowser() {
   return sharedBrowser;
 }
 
+async function renderCardsWithPuppeteer(normalized) {
+  const browser = await getBrowser();
+  console.log('[generate] browser ready');
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1800, height: 14000, deviceScaleFactor: 1 });
+
+  const html = buildHTML(normalized);
+
+  await page.setContent(html, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
+  });
+
+  await page.waitForSelector('#card-6', { timeout: 60000 });
+
+  const images = [];
+  for (let i = 1; i <= 6; i += 1) {
+    const el = await page.$(`#card-${i}`);
+    if (!el) {
+      throw new Error(`card-${i} element not found`);
+    }
+
+    const screenshot = await el.screenshot({ type: 'png' });
+    images.push(screenshot.toString('base64'));
+  }
+
+  await page.close();
+  return { images, debugHtml: html };
+}
+
+async function renderCards(normalized) {
+  const engine = (process.env.RENDER_ENGINE || 'svg').toLowerCase();
+
+  if (engine === 'puppeteer') {
+    console.log('[generate] rendering with puppeteer');
+    return renderCardsWithPuppeteer(normalized);
+  }
+
+  console.log('[generate] rendering with svg');
+  return renderCardsWithSvg(normalized);
+}
+
 function buildHTML(d) {
   const today = d.date || new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const br = (value = '') => String(value || '').replace(/\n/g, '<br>');
@@ -668,33 +711,7 @@ app.post('/generate', async (req, res) => {
     console.log('[generate] request received');
     const normalized = normalizeData(data);
     console.log('[generate] payload normalized');
-
-    const browser = await getBrowser();
-    console.log('[generate] browser ready');
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1800, height: 14000, deviceScaleFactor: 1 });
-
-    const html = buildHTML(normalized);
-
-    await page.setContent(html, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
-
-    await page.waitForSelector('#card-6', { timeout: 60000 });
-
-    const images = [];
-    for (let i = 1; i <= 6; i += 1) {
-      const el = await page.$(`#card-${i}`);
-      if (!el) {
-        throw new Error(`card-${i} element not found`);
-      }
-
-      const screenshot = await el.screenshot({ type: 'png' });
-      images.push(screenshot.toString('base64'));
-    }
-
-    await page.close();
+    const { images, debugHtml } = await renderCards(normalized);
 
     const effectiveImgBBKey = imgbbKey || process.env.IMGBB_API_KEY;
     let uploads = [];
@@ -733,7 +750,7 @@ app.post('/generate', async (req, res) => {
       response.images = images;
       response.urls = urls;
       response.uploads = uploads;
-      response.html = html;
+      response.html = debugHtml || null;
     } else {
       response.urls = urls;
       response.uploads = uploads;
