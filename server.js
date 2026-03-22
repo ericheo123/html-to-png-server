@@ -690,7 +690,10 @@ app.post('/generate', async (req, res) => {
         throw new Error(`card-${i} element not found`);
       }
 
-      const screenshot = await el.screenshot({ type: 'png' });
+      const screenshot = await el.screenshot({
+        type: 'jpeg',
+        quality: 92
+      });
       images.push(screenshot.toString('base64'));
     }
 
@@ -705,7 +708,7 @@ app.post('/generate', async (req, res) => {
       console.log('[generate] uploading images to imgBB');
       uploads = await Promise.all(
         images.map((image, index) =>
-          uploadToImgBB(image, effectiveImgBBKey, `card-${index + 1}-${Date.now()}`)
+          uploadToImgBB(image, effectiveImgBBKey, `card-${index + 1}-${Date.now()}.jpg`)
         )
       );
       urls = uploads.map((item) => item.url);
