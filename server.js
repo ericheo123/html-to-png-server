@@ -493,4 +493,34 @@ app.post('/generate', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`server listening on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`server listening on port ${PORT}`));
+
+let shuttingDown = false;
+
+function shutdown(signal) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+  console.log(`[server] received ${signal}, shutting down gracefully`);
+
+  server.close((err) => {
+    if (err) {
+      console.error('[server] graceful shutdown failed:', err);
+      process.exit(1);
+      return;
+    }
+
+    console.log('[server] shutdown complete');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('[server] shutdown timeout reached, forcing exit');
+    process.exit(1);
+  }, 10000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
