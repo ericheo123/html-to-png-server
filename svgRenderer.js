@@ -300,6 +300,86 @@ function lineChartIcon({ x, y, size = 84, color = YELLOW }) {
   `;
 }
 
+function iconKey(token = '') {
+  const value = String(token || '');
+  if (/📈|📊|💹/.test(value)) return 'trend';
+  if (/💱|💵/.test(value)) return 'currency';
+  if (/🌍|🌐/.test(value)) return 'globe';
+  if (/📦|🛒/.test(value)) return 'box';
+  if (/✅|👀|📝/.test(value)) return 'check';
+  if (/💡|🧭|📌|📍|🔍/.test(value)) return 'spark';
+  return 'diamond';
+}
+
+function renderPathIcon({ x, y, size = 28, color = WHITE, token = '' }) {
+  const key = iconKey(token);
+  const s = size;
+  const stroke = Math.max(2, s * 0.1);
+  const left = x - s / 2;
+  const top = y - s / 2;
+
+  if (key === 'trend') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M ${s * 0.18} ${s * 0.72} L ${s * 0.4} ${s * 0.5} L ${s * 0.58} ${s * 0.58} L ${s * 0.82} ${s * 0.3}" />
+        <path d="M ${s * 0.68} ${s * 0.3} H ${s * 0.82} V ${s * 0.44}" />
+      </g>
+    `;
+  }
+
+  if (key === 'currency') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M ${s * 0.5} ${s * 0.16} V ${s * 0.84}" />
+        <path d="M ${s * 0.7} ${s * 0.26} C ${s * 0.62} ${s * 0.18}, ${s * 0.36} ${s * 0.18}, ${s * 0.32} ${s * 0.34} C ${s * 0.28} ${s * 0.5}, ${s * 0.72} ${s * 0.48}, ${s * 0.68} ${s * 0.66} C ${s * 0.64} ${s * 0.82}, ${s * 0.4} ${s * 0.82}, ${s * 0.3} ${s * 0.72}" />
+      </g>
+    `;
+  }
+
+  if (key === 'globe') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="${s * 0.5}" cy="${s * 0.5}" r="${s * 0.34}" />
+        <path d="M ${s * 0.16} ${s * 0.5} H ${s * 0.84}" />
+        <path d="M ${s * 0.5} ${s * 0.16} C ${s * 0.38} ${s * 0.26}, ${s * 0.38} ${s * 0.74}, ${s * 0.5} ${s * 0.84}" />
+        <path d="M ${s * 0.5} ${s * 0.16} C ${s * 0.62} ${s * 0.26}, ${s * 0.62} ${s * 0.74}, ${s * 0.5} ${s * 0.84}" />
+      </g>
+    `;
+  }
+
+  if (key === 'box') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="${s * 0.2}" y="${s * 0.24}" width="${s * 0.6}" height="${s * 0.52}" rx="${s * 0.08}" />
+        <path d="M ${s * 0.2} ${s * 0.38} H ${s * 0.8}" />
+        <path d="M ${s * 0.5} ${s * 0.38} V ${s * 0.76}" />
+      </g>
+    `;
+  }
+
+  if (key === 'check') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M ${s * 0.24} ${s * 0.54} L ${s * 0.42} ${s * 0.72} L ${s * 0.76} ${s * 0.32}" />
+      </g>
+    `;
+  }
+
+  if (key === 'spark') {
+    return `
+      <g transform="translate(${left}, ${top})" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M ${s * 0.5} ${s * 0.16} L ${s * 0.58} ${s * 0.42} L ${s * 0.84} ${s * 0.5} L ${s * 0.58} ${s * 0.58} L ${s * 0.5} ${s * 0.84} L ${s * 0.42} ${s * 0.58} L ${s * 0.16} ${s * 0.5} L ${s * 0.42} ${s * 0.42} Z" />
+      </g>
+    `;
+  }
+
+  return `
+    <g transform="translate(${left}, ${top})" fill="${color}">
+      <path d="M ${s * 0.5} ${s * 0.16} L ${s * 0.84} ${s * 0.5} L ${s * 0.5} ${s * 0.84} L ${s * 0.16} ${s * 0.5} Z" />
+    </g>
+  `;
+}
+
 function footer(pageNo, date) {
   return `
     <rect x="0" y="${HEIGHT - FOOTER_HEIGHT}" width="${WIDTH}" height="${FOOTER_HEIGHT}" fill="rgba(0,0,0,0.58)" />
@@ -421,7 +501,7 @@ function renderSupportCards(items) {
     return `
       ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height, fill: index === 0 ? CARD_ALT : CARD_BG, radius: 22 })}
       <rect x="${SIDE + 18}" y="${y + 26}" width="66" height="66" rx="18" fill="rgba(255,255,255,0.06)" />
-      <text x="${SIDE + 51}" y="${y + 71}" text-anchor="middle" font-family="${UI_FONT}" font-size="34" fill="${index === 2 ? YELLOW : WHITE}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
+      ${renderPathIcon({ x: SIDE + 51, y: y + 59, size: 28, color: index === 2 ? YELLOW : WHITE, token: item.ico })}
       ${eyebrow ? textBlock({ x: SIDE + 102, y: y + 18, text: eyebrow, width: WIDTH - SIDE * 2 - 128, fontSize: 18, lineHeight: 22, fill: MUTED_SOFT, weight: 800, maxLines: 1 }) : ''}
       ${fittedTextBlock({ x: SIDE + 102, y: y + (eyebrow ? 40 : 30), text: title, width: WIDTH - SIDE * 2 - 128, fontSize: 38, lineHeight: 42, fill: index === 2 ? YELLOW : WHITE, weight: 920, maxLines: 2, minFontSize: 28 })}
       ${multilinePlainText({ x: SIDE + 102, y: y + (eyebrow ? 102 : 94), text: item.desc || '', width: WIDTH - SIDE * 2 - 128, fontSize: 21, lineHeight: 29, fill: MUTED, weight: 620, maxLines: 2 })}
@@ -447,7 +527,7 @@ function renderImpact(card, date) {
       return `
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
-        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT}" font-size="36" fill="${accent.icon}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
+        ${renderPathIcon({ x: SIDE + 56, y: y + 64, size: 30, color: accent.icon, token: item.ico })}
         ${fittedTextBlock({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 40 : 30), text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30 })}
         ${multilinePlainText({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 96 : 92), text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 22, lineHeight: 30, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
@@ -499,7 +579,7 @@ function renderAction(card, date) {
       return `
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
-        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT}" font-size="36" fill="${accent.icon}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
+        ${renderPathIcon({ x: SIDE + 56, y: y + 64, size: 30, color: accent.icon, token: item.ico })}
         ${fittedTextBlock({ x: SIDE + 110, y: y + 30, text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30 })}
         ${multilinePlainText({ x: SIDE + 110, y: y + 94, text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 22, lineHeight: 30, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
