@@ -1,4 +1,5 @@
-const fs = require('fs');
+﻿const fs = require('fs');
+const path = require('path');
 const sharp = require('sharp');
 
 const WIDTH = 1080;
@@ -14,7 +15,7 @@ const CARD_ALT = '#241f2a';
 const CARD_BORDER = 'rgba(255,255,255,0.08)';
 const RED = '#ef5350';
 const GREEN = '#32c96a';
-const PAPERLOGY_PATH = 'C:\\Users\\CNXK\\AppData\\Local\\Microsoft\\Windows\\Fonts\\Paperlogy-6SemiBold.ttf';
+const PAPERLOGY_PATH = path.join(__dirname, 'fonts', 'Paperlogy-6SemiBold.ttf');
 const PAPERLOGY_FONT = fs.existsSync(PAPERLOGY_PATH)
   ? fs.readFileSync(PAPERLOGY_PATH).toString('base64')
   : '';
@@ -268,6 +269,20 @@ function roundedRect({ x, y, width, height, fill, stroke = CARD_BORDER, radius =
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${radius}" ry="${radius}" fill="${fill}" stroke="${stroke}" />`;
 }
 
+function lineChartIcon({ x, y, size = 84, color = YELLOW }) {
+  const s = size;
+  return `
+    <g transform="translate(${x}, ${y})">
+      <rect x="0" y="0" width="${s}" height="${s}" rx="${Math.round(s * 0.28)}" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" />
+      <path d="M ${s * 0.2} ${s * 0.72} L ${s * 0.42} ${s * 0.52} L ${s * 0.56} ${s * 0.6} L ${s * 0.78} ${s * 0.34}" fill="none" stroke="${color}" stroke-width="${Math.max(4, s * 0.07)}" stroke-linecap="round" stroke-linejoin="round" />
+      <circle cx="${s * 0.2}" cy="${s * 0.72}" r="${Math.max(3, s * 0.05)}" fill="${color}" />
+      <circle cx="${s * 0.42}" cy="${s * 0.52}" r="${Math.max(3, s * 0.05)}" fill="${color}" />
+      <circle cx="${s * 0.56}" cy="${s * 0.6}" r="${Math.max(3, s * 0.05)}" fill="${color}" />
+      <circle cx="${s * 0.78}" cy="${s * 0.34}" r="${Math.max(3, s * 0.05)}" fill="${color}" />
+    </g>
+  `;
+}
+
 function footer(pageNo, date) {
   return `
     <rect x="0" y="${HEIGHT - FOOTER_HEIGHT}" width="${WIDTH}" height="${FOOTER_HEIGHT}" fill="rgba(0,0,0,0.58)" />
@@ -485,7 +500,7 @@ function renderClosing(card, date) {
   const [summary, cta] = String(card.desc || '').split('\n\n');
   return `
     ${background(true)}
-    <text x="${WIDTH / 2}" y="226" text-anchor="middle" font-family="${UI_FONT_WITH_EMOJI}" font-size="94" fill="${YELLOW}">${esc(card.ico || '📈')}</text>
+    ${lineChartIcon({ x: WIDTH / 2 - 42, y: 158, size: 84, color: YELLOW })}
     ${fittedTextBlock({ x: SIDE, y: 308, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 82, lineHeight: 88, fill: WHITE, weight: 920, anchor: 'middle', maxLines: 3, minFontSize: 50 })}
     <rect x="${SIDE + 86}" y="566" width="${WIDTH - (SIDE + 86) * 2}" height="6" rx="3" fill="rgba(251,191,36,0.85)" />
     ${multilinePlainText({ x: SIDE + 20, y: 614, text: summary || '', width: WIDTH - SIDE * 2 - 40, fontSize: 30, lineHeight: 44, fill: MUTED, weight: 640, anchor: 'middle', maxLines: 3 })}
