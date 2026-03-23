@@ -207,30 +207,42 @@ function stripCodeFence(value = '') {
     .trim();
 }
 
+function stripHighlights(value = '') {
+  return String(value || '').replace(/\[\[(.+?)\]\]/g, '$1');
+}
+
 function parsePayload(raw) {
   if (!raw) return null;
   if (typeof raw === 'string') {
-    return JSON.parse(stripCodeFence(raw));
+    try {
+      return JSON.parse(stripCodeFence(raw));
+    } catch (err) {
+      const parseError = new Error('Generated JSON is invalid');
+      parseError.code = 'INVALID_GENERATED_JSON';
+      throw parseError;
+    }
   }
   return raw;
 }
 
 function iconCandidates(...values) {
   const text = values.filter(Boolean).join(' ').toLowerCase();
+
   if (/자동차|차량|모빌리티/.test(text)) return ['🚗', '🚙', '🛻'];
-  if (/철강|알루미늄|공장|제조/.test(text)) return ['🏭', '⚙️', '🧱'];
-  if (/주식|코스피|증시|투자/.test(text)) return ['📈', '💹', '📊'];
-  if (/환율|달러|원화|무역/.test(text)) return ['💱', '💵', '🌍'];
-  if (/수출/.test(text)) return ['📦', '🚢', '💱'];
-  if (/물가|장바구니|식재료|수입품/.test(text)) return ['🛒', '🥖', '🧺'];
-  if (/기름|유가|전기|에너지/.test(text)) return ['⛽', '⚡', '🛢️'];
-  if (/여행|항공|해외직구|직구/.test(text)) return ['✈️', '🧳', '🌐'];
-  if (/금리|대출|이자|은행/.test(text)) return ['🏦', '💳', '🏠'];
-  if (/공급망|재편|생산/.test(text)) return ['🔗', '🏗️', '📦'];
-  if (/트럼프|재집권|정책|행정부|의회|정부/.test(text)) return ['🏛️', '🧾', '⚖️'];
-  if (/원인|배경/.test(text)) return ['🧾', '🔎', '📌'];
-  if (/확인|체크|주목/.test(text)) return ['✅', '👀', '📍'];
-  return ['📌', '✨', '🔹'];
+  if (/반도체|칩|공장|제조/.test(text)) return ['🏭', '⚙️', '🧩'];
+  if (/증시|주식|코스피|코스닥|투자/.test(text)) return ['📈', '📊', '💹'];
+  if (/환율|달러|원화|외환|무역/.test(text)) return ['💱', '💵', '🌍'];
+  if (/수출/.test(text)) return ['📦', '🚢', '🌍'];
+  if (/물가|장바구니|소비|수입/.test(text)) return ['🛒', '💳', '📦'];
+  if (/기름|유가|전기|에너지/.test(text)) return ['⛽', '⚡', '🔋'];
+  if (/여행|항공|직구|해외/.test(text)) return ['✈️', '🧳', '🌐'];
+  if (/금리|대출|이자|채권/.test(text)) return ['🏦', '💸', '📉'];
+  if (/생산|공급|공급망|재고/.test(text)) return ['🏗️', '📦', '🏭'];
+  if (/정부|예산|정책|의회|협상/.test(text)) return ['🏛️', '🧾', '🤝'];
+  if (/원인|배경/.test(text)) return ['🔍', '🧩', '📌'];
+  if (/확인|체크|점검|주목/.test(text)) return ['✅', '👀', '📝'];
+
+  return ['📌', '📍', '📰'];
 }
 
 function inferIcon(...values) {
@@ -271,6 +283,118 @@ function highlightText(value = '') {
   });
 }
 
+function normalizeText(value = '') {
+  return String(value || '')
+    .replace(/\r/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\s+([,!.?:;])/g, '$1')
+    .trim();
+}
+
+function limitText(value, maxLength, { preserveHighlights = false } = {}) {
+  const text = normalizeText(value);
+  if (!maxLength || text.length <= maxLength) {
+    return text;
+  }
+
+  const truncated = text.slice(0, maxLength).trim();
+  if (!preserveHighlights) {
+    return truncated;
+  }
+
+  const openCount = (truncated.match(/\[\[/g) || []).length;
+  const closeCount = (truncated.match(/\]\]/g) || []).length;
+  if (openCount > closeCount) {
+    const repaired = truncated.replace(/\[\[[^[\]]*$/, '').trim();
+    if (repaired) {
+      return repaired;
+    }
+
+    return limitText(stripHighlights(text), maxLength, { preserveHighlights: false });
+  }
+
+  return truncated;
+}
+
+function sanitizeStringArray(values = [], maxItems, maxLength) {
+  return (Array.isArray(values) ? values : [])
+    .slice(0, maxItems)
+    .map((value) => limitText(value, maxLength))
+    .filter(Boolean);
+}
+
+function sanitizeNormalized(normalized) {
+  return {
+    ...normalized,
+    topic: limitText(normalized.topic, 24),
+    caption: limitText(normalized.caption, 460),
+    card1: {
+      ...normalized.card1,
+      eyebrow: limitText(normalized.card1?.eyebrow, 12),
+      hero: limitText(normalized.card1?.hero, 8, { preserveHighlights: true }),
+      hero2: limitText(normalized.card1?.hero2, 24, { preserveHighlights: true }),
+      sub: limitText(normalized.card1?.sub, 38),
+      chips: sanitizeStringArray(normalized.card1?.chips, 4, 14)
+    },
+    card2: {
+      ...normalized.card2,
+      badge: limitText(normalized.card2?.badge, 12),
+      title: limitText(normalized.card2?.title, 20, { preserveHighlights: true }),
+      hero: {
+        label: limitText(normalized.card2?.hero?.label, 10),
+        title: limitText(normalized.card2?.hero?.title, 18, { preserveHighlights: true }),
+        desc: limitText(normalized.card2?.hero?.desc, 40)
+      },
+      items: (normalized.card2?.items || []).slice(0, 3).map((item) => ({
+        ...item,
+        label: limitText(item?.label, 10),
+        val: limitText(item?.val, 16, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 30)
+      }))
+    },
+    card3: {
+      ...normalized.card3,
+      badge: limitText(normalized.card3?.badge, 12),
+      title: limitText(normalized.card3?.title, 20, { preserveHighlights: true }),
+      items: (normalized.card3?.items || []).slice(0, 4).map((item) => ({
+        ...item,
+        label: limitText(item?.label, 10),
+        title: limitText(item?.title, 16, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 30)
+      }))
+    },
+    card4: {
+      ...normalized.card4,
+      badge: limitText(normalized.card4?.badge, 12),
+      title: limitText(normalized.card4?.title, 20, { preserveHighlights: true }),
+      items: (normalized.card4?.items || []).slice(0, 3).map((item) => ({
+        ...item,
+        title: limitText(item?.title, 16, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 32)
+      })),
+      warning: limitText(normalized.card4?.warning, 36)
+    },
+    card5: {
+      ...normalized.card5,
+      badge: limitText(normalized.card5?.badge, 12),
+      title: limitText(normalized.card5?.title, 20, { preserveHighlights: true }),
+      items: (normalized.card5?.items || []).slice(0, 4).map((item) => ({
+        ...item,
+        title: limitText(item?.title, 14, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 28)
+      })),
+      quote: limitText(normalized.card5?.quote, 24)
+    },
+    card6: {
+      ...normalized.card6,
+      title: limitText(normalized.card6?.title, 26, { preserveHighlights: true }),
+      desc: limitText(normalized.card6?.desc, 72),
+      tags: sanitizeStringArray(normalized.card6?.tags, 4, 14)
+    }
+  };
+}
+
 function normalizeStats(stats = {}) {
   const items = Array.isArray(stats.items) ? stats.items : [];
   const hero = stats.hero;
@@ -298,7 +422,7 @@ function normalizeStats(stats = {}) {
 
 function mapStatsItems(items = []) {
   const rows = items.slice(0, 3);
-  const icons = pickUniqueIcons(rows, () => '📌', ['📘', '📈', '🚨', '🧭']);
+  const icons = pickUniqueIcons(rows, () => '📌', ['📌', '📈', '💡', '🧭']);
 
   return rows.map((item, index) => ({
     ico: icons[index] || '',
@@ -312,7 +436,7 @@ function mapStatsItems(items = []) {
 
 function mapImpactItems(items = []) {
   const rows = items.slice(0, 4);
-  const icons = pickUniqueIcons(rows, () => '📌', ['🛒', '⛽', '✈️', '🏦', '📦', '💱']);
+  const icons = pickUniqueIcons(rows, () => '🛒', ['🛒', '💸', '💱', '📦', '📉', '🌍']);
 
   return rows.map((item, index) => ({
     ico: icons[index] || inferIcon(item.label, item.value, item.desc),
@@ -334,7 +458,7 @@ function mapCauseItems(items = []) {
 
 function mapActionItems(items = []) {
   const rows = items.slice(0, 4);
-  const icons = pickUniqueIcons(rows, () => '✅', ['💵', '✈️', '🏠', '📊', '🛒']);
+  const icons = pickUniqueIcons(rows, () => '✅', ['✅', '👀', '📝', '📊', '🛒']);
 
   return rows.map((item, index) => ({
     ico: icons[index] || inferIcon(item.label, item.desc),
@@ -342,7 +466,6 @@ function mapActionItems(items = []) {
     desc: item.desc || ''
   }));
 }
-
 function normalizeData(rawData) {
   const parsed = parsePayload(rawData);
   if (!parsed) {
@@ -363,21 +486,21 @@ function normalizeData(rawData) {
       parsed.topic ||
       stats.title ||
       impact.title ||
-      '오늘의 이슈';
+      '오늘 이슈';
     const fallbackSub =
       cover.headline_sub ||
       cover.summary ||
       parsed.topic ||
-      '지금 꼭 알아야 할 핵심만 정리했어요';
+      '지금 흐름을 짧게 정리했어요';
 
-    return {
+    return sanitizeNormalized({
       date: parsed.date,
       topic: parsed.topic || '',
       caption: parsed.caption || '',
       card1: {
         eyebrow: cover.eyebrow || parsed.topic || '',
         hero: fallbackMain,
-        hero2: fallbackSub === fallbackMain ? (cover.summary || '지금 꼭 알아야 할 핵심만 정리했어요') : fallbackSub,
+        hero2: fallbackSub === fallbackMain ? (cover.summary || '지금 흐름을 짧게 정리했어요') : fallbackSub,
         sub: cover.summary || '',
         chips: cover.hashtags || []
       },
@@ -410,7 +533,7 @@ function normalizeData(rawData) {
         desc: [closing.summary, closing.cta].filter(Boolean).join('\n\n'),
         tags: closing.hashtags || []
       }
-    };
+    });
   }
 
   throw new Error('Invalid cards structure');
@@ -488,7 +611,8 @@ app.post('/generate', async (req, res) => {
     res.json(response);
   } catch (err) {
     console.error('[generate] error:', err);
-    res.status(500).json({ error: err.message });
+    const statusCode = err.code === 'INVALID_GENERATED_JSON' ? 400 : 500;
+    res.status(statusCode).json({ error: err.message });
   }
 });
 
@@ -524,3 +648,4 @@ function shutdown(signal) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
