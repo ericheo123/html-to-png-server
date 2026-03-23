@@ -286,10 +286,33 @@ function highlightText(value = '') {
 function normalizeText(value = '') {
   return String(value || '')
     .replace(/\r/g, '')
+    .replace(/([A-Za-z]+)\s*vs\s*([A-Za-z]+)/g, '$1 vs $2')
+    .replace(/([A-Za-z])([가-힣])/g, '$1 $2')
+    .replace(/([가-힣])([A-Za-z])/g, '$1 $2')
+    .replace(/([A-Za-z]{2,})\s+(와|과|은|는|이|가|을|를|도|만|의|로|에|께)/g, '$1$2')
+    .replace(/(\d)\s+([가-힣])/g, '$1$2')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .replace(/\s+([,!.?:;])/g, '$1')
     .trim();
+}
+
+function truncateAtBoundary(text, maxLength) {
+  if (!maxLength || text.length <= maxLength) {
+    return text;
+  }
+
+  const sliced = text.slice(0, maxLength).trim();
+  const boundary = sliced.search(/[\s,.!?)]?$/);
+  const trailingWindow = sliced.slice(Math.max(0, sliced.length - 12));
+  const match = trailingWindow.match(/^(.*?)([\s,.!?)](?:[^\s,.!?)]*)?)$/);
+  const candidate = match?.[1]?.trim();
+
+  if (candidate && candidate.length >= Math.max(6, Math.floor(maxLength * 0.6))) {
+    return candidate;
+  }
+
+  return sliced;
 }
 
 function limitText(value, maxLength, { preserveHighlights = false } = {}) {
@@ -298,7 +321,7 @@ function limitText(value, maxLength, { preserveHighlights = false } = {}) {
     return text;
   }
 
-  const truncated = text.slice(0, maxLength).trim();
+  const truncated = truncateAtBoundary(text, maxLength);
   if (!preserveHighlights) {
     return truncated;
   }
@@ -327,70 +350,70 @@ function sanitizeStringArray(values = [], maxItems, maxLength) {
 function sanitizeNormalized(normalized) {
   return {
     ...normalized,
-    topic: limitText(normalized.topic, 24),
-    caption: limitText(normalized.caption, 460),
+    topic: limitText(normalized.topic, 32),
+    caption: limitText(normalized.caption, 900),
     card1: {
       ...normalized.card1,
-      eyebrow: limitText(normalized.card1?.eyebrow, 12),
-      hero: limitText(normalized.card1?.hero, 8, { preserveHighlights: true }),
-      hero2: limitText(normalized.card1?.hero2, 24, { preserveHighlights: true }),
-      sub: limitText(normalized.card1?.sub, 38),
-      chips: sanitizeStringArray(normalized.card1?.chips, 4, 14)
+      eyebrow: limitText(normalized.card1?.eyebrow, 18),
+      hero: limitText(normalized.card1?.hero, 12, { preserveHighlights: true }),
+      hero2: limitText(normalized.card1?.hero2, 34, { preserveHighlights: true }),
+      sub: limitText(normalized.card1?.sub, 60),
+      chips: sanitizeStringArray(normalized.card1?.chips, 4, 16)
     },
     card2: {
       ...normalized.card2,
-      badge: limitText(normalized.card2?.badge, 12),
-      title: limitText(normalized.card2?.title, 20, { preserveHighlights: true }),
+      badge: limitText(normalized.card2?.badge, 16),
+      title: limitText(normalized.card2?.title, 28, { preserveHighlights: true }),
       hero: {
-        label: limitText(normalized.card2?.hero?.label, 10),
-        title: limitText(normalized.card2?.hero?.title, 18, { preserveHighlights: true }),
-        desc: limitText(normalized.card2?.hero?.desc, 40)
+        label: limitText(normalized.card2?.hero?.label, 12),
+        title: limitText(normalized.card2?.hero?.title, 28, { preserveHighlights: true }),
+        desc: limitText(normalized.card2?.hero?.desc, 74)
       },
       items: (normalized.card2?.items || []).slice(0, 3).map((item) => ({
         ...item,
-        label: limitText(item?.label, 10),
-        val: limitText(item?.val, 16, { preserveHighlights: true }),
-        desc: limitText(item?.desc, 30)
+        label: limitText(item?.label, 12),
+        val: limitText(item?.val, 20, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 44)
       }))
     },
     card3: {
       ...normalized.card3,
-      badge: limitText(normalized.card3?.badge, 12),
-      title: limitText(normalized.card3?.title, 20, { preserveHighlights: true }),
+      badge: limitText(normalized.card3?.badge, 16),
+      title: limitText(normalized.card3?.title, 28, { preserveHighlights: true }),
       items: (normalized.card3?.items || []).slice(0, 4).map((item) => ({
         ...item,
-        label: limitText(item?.label, 10),
-        title: limitText(item?.title, 16, { preserveHighlights: true }),
-        desc: limitText(item?.desc, 30)
+        label: limitText(item?.label, 12),
+        title: limitText(item?.title, 20, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 44)
       }))
     },
     card4: {
       ...normalized.card4,
-      badge: limitText(normalized.card4?.badge, 12),
-      title: limitText(normalized.card4?.title, 20, { preserveHighlights: true }),
+      badge: limitText(normalized.card4?.badge, 16),
+      title: limitText(normalized.card4?.title, 30, { preserveHighlights: true }),
       items: (normalized.card4?.items || []).slice(0, 3).map((item) => ({
         ...item,
-        title: limitText(item?.title, 16, { preserveHighlights: true }),
-        desc: limitText(item?.desc, 32)
+        title: limitText(item?.title, 20, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 48)
       })),
-      warning: limitText(normalized.card4?.warning, 36)
+      warning: limitText(normalized.card4?.warning, 56)
     },
     card5: {
       ...normalized.card5,
-      badge: limitText(normalized.card5?.badge, 12),
-      title: limitText(normalized.card5?.title, 20, { preserveHighlights: true }),
+      badge: limitText(normalized.card5?.badge, 16),
+      title: limitText(normalized.card5?.title, 30, { preserveHighlights: true }),
       items: (normalized.card5?.items || []).slice(0, 4).map((item) => ({
         ...item,
-        title: limitText(item?.title, 14, { preserveHighlights: true }),
-        desc: limitText(item?.desc, 28)
+        title: limitText(item?.title, 18, { preserveHighlights: true }),
+        desc: limitText(item?.desc, 42)
       })),
-      quote: limitText(normalized.card5?.quote, 24)
+      quote: limitText(normalized.card5?.quote, 42)
     },
     card6: {
       ...normalized.card6,
-      title: limitText(normalized.card6?.title, 26, { preserveHighlights: true }),
-      desc: limitText(normalized.card6?.desc, 72),
-      tags: sanitizeStringArray(normalized.card6?.tags, 4, 14)
+      title: limitText(normalized.card6?.title, 40, { preserveHighlights: true }),
+      desc: limitText(normalized.card6?.desc, 140),
+      tags: sanitizeStringArray(normalized.card6?.tags, 4, 16)
     }
   };
 }
@@ -603,6 +626,7 @@ app.post('/generate', async (req, res) => {
       response.urls = urls;
       response.uploads = uploads;
       response.html = debugHtml || null;
+      response.normalized = normalized;
     } else {
       response.urls = urls;
       response.uploads = uploads;
