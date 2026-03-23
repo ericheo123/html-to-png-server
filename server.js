@@ -249,6 +249,19 @@ function inferIcon(...values) {
   return iconCandidates(...values)[0];
 }
 
+function sanitizeDisplayIcon(value, ...fallbackContext) {
+  const icon = String(value || '').trim();
+  if (!icon) {
+    return '';
+  }
+
+  if (/[A-Za-z0-9가-힣?]/.test(icon) || icon.length > 4) {
+    return inferIcon(...fallbackContext);
+  }
+
+  return icon;
+}
+
 function pickUniqueIcons(items = [], resolver, fallbackIcons = []) {
   const used = new Set();
 
@@ -551,7 +564,7 @@ function normalizeData(rawData) {
         quote: action.closing || ''
       },
       card6: {
-        ico: closing.ico || '',
+        ico: sanitizeDisplayIcon(closing.ico, closing.title, closing.summary, closing.cta),
         title: closing.title || '',
         desc: [closing.summary, closing.cta].filter(Boolean).join('\n\n'),
         tags: closing.hashtags || []
