@@ -23,12 +23,22 @@ const PAPERLOGY_FONT = ENABLE_PAPERLOGY && fs.existsSync(PAPERLOGY_PATH)
 const UI_FONT = PAPERLOGY_FONT
   ? "'Paperlogy','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"
   : "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
-const UI_FONT_WITH_EMOJI = PAPERLOGY_FONT
-  ? "'Paperlogy','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI Emoji',sans-serif"
-  : "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic','Segoe UI Emoji',sans-serif";
+
+function sanitizeText(value = '') {
+  return String(value || '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\uFE0F/gu, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function sanitizeIcon(value = '', fallback = '◆') {
+  const cleaned = sanitizeText(value);
+  return cleaned || fallback;
+}
 
 function esc(value = '') {
-  return String(value || '')
+  return sanitizeText(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -41,7 +51,7 @@ function svgText(value = '') {
 }
 
 function tokenizeHighlights(value = '') {
-  const text = String(value || '');
+  const text = sanitizeText(value);
   const tokens = [];
   const pattern = /\[\[(.+?)\]\]/g;
   let cursor = 0;
@@ -155,7 +165,7 @@ function lineText(line = []) {
 function fitTypography(text, width, fontSize, lineHeight, maxLines, minFontSize = 22, letterSpacing = 0) {
   let size = fontSize;
   let height = lineHeight;
-  const content = String(text || '');
+  const content = sanitizeText(text);
 
   while (size > minFontSize) {
     const avgCharWidth = size * 0.72;
@@ -204,7 +214,7 @@ function textBlock({
   weight = 700,
   anchor = 'start',
   maxLines = 2,
-  fontFamily = UI_FONT_WITH_EMOJI,
+  fontFamily = UI_FONT,
   letterSpacing = 0,
   extraAttrs = ''
 }) {
@@ -233,7 +243,7 @@ function textBlock({
 function plainLines(text = '', width, fontSize, maxLines = 2) {
   const avgCharWidth = fontSize * 0.56;
   const maxCharsPerLine = Math.max(8, Math.floor(width / avgCharWidth));
-  return wrapTokens([{ text: String(text || ''), highlight: false }], maxCharsPerLine, maxLines)
+  return wrapTokens([{ text: sanitizeText(text), highlight: false }], maxCharsPerLine, maxLines)
     .map((line) => line.map((seg) => seg.text).join(''))
     .join('\n');
 }
@@ -334,7 +344,7 @@ function badge(label, color) {
 function renderCover(card, date) {
   const eyebrow = plainLines(card.eyebrow || '', 340, 20, 1);
   const eyebrowWidth = Math.max(170, Math.min(340, eyebrow.length * 18 + 54));
-  const displayFont = UI_FONT_WITH_EMOJI;
+  const displayFont = UI_FONT;
   const leadHeadline = coverHeadline(card.hero2 || '');
 
   return `
@@ -405,7 +415,7 @@ function renderSupportCards(items) {
     return `
       ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height, fill: index === 0 ? CARD_ALT : CARD_BG, radius: 22 })}
       <rect x="${SIDE + 18}" y="${y + 26}" width="66" height="66" rx="18" fill="rgba(255,255,255,0.06)" />
-      <text x="${SIDE + 51}" y="${y + 71}" text-anchor="middle" font-family="${UI_FONT_WITH_EMOJI}" font-size="34" fill="${index === 2 ? YELLOW : WHITE}">${esc(item.ico || '📌')}</text>
+      <text x="${SIDE + 51}" y="${y + 71}" text-anchor="middle" font-family="${UI_FONT}" font-size="34" fill="${index === 2 ? YELLOW : WHITE}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
       ${eyebrow ? textBlock({ x: SIDE + 102, y: y + 18, text: eyebrow, width: WIDTH - SIDE * 2 - 128, fontSize: 18, lineHeight: 22, fill: MUTED_SOFT, weight: 800, maxLines: 1 }) : ''}
       ${fittedTextBlock({ x: SIDE + 102, y: y + (eyebrow ? 40 : 30), text: title, width: WIDTH - SIDE * 2 - 128, fontSize: 42, lineHeight: 46, fill: index === 2 ? YELLOW : WHITE, weight: 920, maxLines: 2, minFontSize: 30 })}
       ${multilinePlainText({ x: SIDE + 102, y: y + (eyebrow ? 104 : 96), text: item.desc || '', width: WIDTH - SIDE * 2 - 128, fontSize: 23, lineHeight: 31, fill: MUTED, weight: 620, maxLines: 2 })}
@@ -431,7 +441,7 @@ function renderImpact(card, date) {
       return `
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
-        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT_WITH_EMOJI}" font-size="36" fill="${accent.icon}">${esc(item.ico || '📌')}</text>
+        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT}" font-size="36" fill="${accent.icon}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
         ${fittedTextBlock({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 40 : 30), text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 44, lineHeight: 46, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 32 })}
         ${multilinePlainText({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 98 : 96), text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 25, lineHeight: 32, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
@@ -483,7 +493,7 @@ function renderAction(card, date) {
       return `
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
-        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT_WITH_EMOJI}" font-size="36" fill="${accent.icon}">${esc(item.ico || '📌')}</text>
+        <text x="${SIDE + 56}" y="${y + 77}" text-anchor="middle" font-family="${UI_FONT}" font-size="36" fill="${accent.icon}">${esc(sanitizeIcon(item.ico, '◆'))}</text>
         ${fittedTextBlock({ x: SIDE + 110, y: y + 30, text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 44, lineHeight: 46, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 32 })}
         ${multilinePlainText({ x: SIDE + 110, y: y + 96, text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 24, lineHeight: 32, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
@@ -562,5 +572,4 @@ async function renderCardsWithSvg(normalized) {
 module.exports = {
   renderCardsWithSvg
 };
-
 
