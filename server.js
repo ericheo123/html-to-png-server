@@ -1,8 +1,42 @@
+const crypto = require('crypto');
 const express = require('express');
 const { renderCardsWithSvg } = require('./svgRenderer');
 
 const app = express();
 app.use(express.json({ limit: '20mb' }));
+
+const TEMP_MEDIA_TTL_MS = 15 * 60 * 1000;
+const tempMediaStore = new Map();
+
+function pruneExpiredTempMedia() {
+  const now = Date.now();
+  for (const [id, entry] of tempMediaStore.entries()) {
+    if (entry.expiresAt <= now) {
+      tempMediaStore.delete(id);
+    }
+  }
+}
+
+function createTempMediaUrl(req, base64Image, mimeType = 'image/png') {
+  const id = crypto.randomUUID();
+  const buffer = Buffer.from(base64Image, 'base64');
+  tempMediaStore.set(id, {
+    buffer,
+    mimeType,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + TEMP_MEDIA_TTL_MS
+  });
+
+  const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+  const host = req.get('x-forwarded-host') || req.get('host');
+  if (!host) {
+    throw new Error('Unable to determine public host for temporary media URL');
+  }
+
+  return `${protocol}://${host}/temp-media/${id}.png`;
+}
+
+setInterval(pruneExpiredTempMedia, 60 * 1000).unref();
 
 async function graphRequest(path, params) {
   const response = await fetch(`https://graph.instagram.com/v25.0/${path}`, {
@@ -197,6 +231,23 @@ async function createInstagramCarousel({
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
+});
+
+app.get('/temp-media/:id', (req, res) => {
+  pruneExpiredTempMedia();
+
+  const rawId = String(req.params.id || '');
+  const id = rawId.replace(/\.png$/i, '');
+  const entry = tempMediaStore.get(id);
+
+  if (!entry) {
+    return res.status(404).json({ error: 'media not found or expired' });
+  }
+
+  res.setHeader('Content-Type', entry.mimeType || 'image/png');
+  res.setHeader('Content-Length', String(entry.buffer.length));
+  res.setHeader('Cache-Control', 'public, max-age=900, immutable');
+  res.send(entry.buffer);
 });
 
 function stripCodeFence(value = '') {
@@ -600,6 +651,7 @@ app.post('/generate', async (req, res) => {
     const normalized = normalizeData(data);
     console.log('[generate] payload normalized');
     const { images, debugHtml } = await renderCards(normalized);
+    const instagramImageUrls = images.map((image) => createTempMediaUrl(req, image));
 
     const effectiveImgBBKey = imgbbKey || process.env.IMGBB_API_KEY;
     let uploads = [];
@@ -621,7 +673,7 @@ app.post('/generate', async (req, res) => {
       instagram = await createInstagramCarousel({
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
-        imageUrls: urls,
+        imageUrls: instagramImageUrls,
         caption: caption || normalized.caption || '',
         publish: true
       });
@@ -638,6 +690,7 @@ app.post('/generate', async (req, res) => {
       response.images = images;
       response.urls = urls;
       response.uploads = uploads;
+      response.instagramImageUrls = instagramImageUrls;
       response.html = debugHtml || null;
       response.normalized = normalized;
     } else {
