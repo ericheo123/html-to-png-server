@@ -16,11 +16,12 @@ const CARD_BORDER = 'rgba(255,255,255,0.08)';
 const RED = '#ef5350';
 const GREEN = '#32c96a';
 const PAPERLOGY_PATH = path.join(__dirname, 'fonts', 'Paperlogy-6SemiBold.ttf');
-const ENABLE_PAPERLOGY = process.env.USE_PAPERLOGY === 'true';
-const PAPERLOGY_FONT = ENABLE_PAPERLOGY && fs.existsSync(PAPERLOGY_PATH)
+const PAPERLOGY_FONT = fs.existsSync(PAPERLOGY_PATH)
   ? fs.readFileSync(PAPERLOGY_PATH).toString('base64')
   : '';
-const UI_FONT = "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
+const UI_FONT = PAPERLOGY_FONT
+  ? "'Paperlogy','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"
+  : "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
 
 function sanitizeText(value = '') {
   return String(value || '')
