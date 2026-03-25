@@ -671,10 +671,11 @@ app.post('/generate', async (req, res) => {
 
     if (publishToInstagram) {
       console.log('[generate] creating Instagram carousel');
+      const effectiveInstagramImageUrls = urls.length > 0 ? urls : instagramImageUrls;
       instagram = await createInstagramCarousel({
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
-        imageUrls: instagramImageUrls,
+        imageUrls: effectiveInstagramImageUrls,
         caption: caption || normalized.caption || '',
         publish: true
       });
