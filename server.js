@@ -664,12 +664,18 @@ app.post('/generate', async (req, res) => {
     let instagram = null;
 
     if (effectiveImgBBKey) {
-      console.log('[generate] uploading images to imgBB');
-      uploads = await Promise.all(
-        images.map((image, index) =>
-          uploadToImgBB(image, effectiveImgBBKey, `card-${index + 1}-${Date.now()}.png`)
-        )
-      );
+      console.log('[generate] uploading images to imgBB (sequential)');
+      for (let index = 0; index < images.length; index += 1) {
+        const upload = await uploadToImgBB(
+          images[index],
+          effectiveImgBBKey,
+          `card-${index + 1}-${Date.now()}.png`
+        );
+        uploads.push(upload);
+        if (index < images.length - 1) {
+          await sleep(500);
+        }
+      }
       urls = uploads.map((item) => item.url);
     }
 
