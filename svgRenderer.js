@@ -649,8 +649,8 @@ async function renderCardsWithSvg(normalized) {
 
   for (let i = 1; i <= 6; i += 1) {
     const svg = buildSvg(i, normalized, date);
-    const png = await sharp(Buffer.from(svg)).png().toBuffer();
-    buffers.push(png.toString('base64'));
+    const jpeg = await sharp(Buffer.from(svg)).jpeg({ quality: 92 }).toBuffer();
+    buffers.push(jpeg.toString('base64'));
   }
 
   return { images: buffers, debugHtml: null };

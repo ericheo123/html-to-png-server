@@ -17,7 +17,7 @@ function pruneExpiredTempMedia() {
   }
 }
 
-function createTempMediaUrl(req, base64Image, mimeType = 'image/png') {
+function createTempMediaUrl(req, base64Image, mimeType = 'image/jpeg') {
   const id = crypto.randomUUID();
   const buffer = Buffer.from(base64Image, 'base64');
   tempMediaStore.set(id, {
@@ -33,7 +33,7 @@ function createTempMediaUrl(req, base64Image, mimeType = 'image/png') {
   }
 
   // Always use https — Instagram requires HTTPS image URLs
-  return `https://${host}/temp-media/${id}.png`;
+  return `https://${host}/temp-media/${id}.jpg`;
 }
 
 setInterval(pruneExpiredTempMedia, 60 * 1000).unref();
@@ -208,7 +208,6 @@ async function createInstagramCarousel({
     console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
     const item = await graphRequest(`${igUserId}/media`, {
       image_url: imageUrl,
-      media_type: 'IMAGE',
       is_carousel_item: 'true',
       access_token: accessToken
     });
@@ -257,7 +256,7 @@ app.get('/temp-media/:id', (req, res) => {
   pruneExpiredTempMedia();
 
   const rawId = String(req.params.id || '');
-  const id = rawId.replace(/\.png$/i, '');
+  const id = rawId.replace(/\.(png|jpg|jpeg)$/i, '');
   const entry = tempMediaStore.get(id);
 
   if (!entry) {
@@ -684,7 +683,7 @@ app.post('/generate', async (req, res) => {
         const upload = await uploadToImgBB(
           images[index],
           effectiveImgBBKey,
-          `card-${index + 1}-${Date.now()}.png`
+          `card-${index + 1}-${Date.now()}.jpg`
         );
         uploads.push(upload);
         if (index < images.length - 1) {
