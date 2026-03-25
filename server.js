@@ -196,6 +196,7 @@ async function createInstagramCarousel({
       console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
       return graphRequest(`${igUserId}/media`, {
         image_url: imageUrl,
+        media_type: 'IMAGE',
         is_carousel_item: 'true',
         access_token: accessToken
       });
