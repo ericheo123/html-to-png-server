@@ -696,13 +696,15 @@ app.post('/generate', async (req, res) => {
 
     if (publishToInstagram) {
       console.log('[generate] creating Instagram carousel');
-      // Always use Render temp media URLs for Instagram — imgBB URLs may be
-      // blocked or inaccessible to Instagram's crawler.
-      console.log('[generate] using temp media URLs for Instagram:', instagramImageUrls);
+      // Prefer imgBB URLs for Instagram — they're on a public CDN (i.ibb.co)
+      // that Instagram's crawler can access. Fall back to Render temp URLs only
+      // if imgBB upload was skipped.
+      const igImageUrls = urls.length === images.length ? urls : instagramImageUrls;
+      console.log('[generate] using image URLs for Instagram:', igImageUrls);
       instagram = await createInstagramCarousel({
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
-        imageUrls: instagramImageUrls,
+        imageUrls: igImageUrls,
         caption: caption || normalized.caption || '',
         publish: true
       });
