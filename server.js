@@ -39,7 +39,7 @@ function createTempMediaUrl(req, base64Image, mimeType = 'image/png') {
 setInterval(pruneExpiredTempMedia, 60 * 1000).unref();
 
 async function graphRequest(path, params) {
-  const response = await fetch(`https://graph.instagram.com/v25.0/${path}`, {
+  const response = await fetch(`https://graph.instagram.com/v21.0/${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
@@ -49,7 +49,11 @@ async function graphRequest(path, params) {
 
   const payload = await response.json();
   if (!response.ok || payload.error) {
-    const message = payload?.error?.message || `Instagram request failed with status ${response.status}`;
+    console.error('[instagram] API error full response:', JSON.stringify(payload));
+    const err = payload?.error;
+    const message = err
+      ? `Instagram error ${err.code}/${err.error_subcode || '-'}: ${err.message}`
+      : `Instagram request failed with status ${response.status}`;
     throw new Error(message);
   }
 
@@ -57,7 +61,7 @@ async function graphRequest(path, params) {
 }
 
 async function graphGet(path, query) {
-  const url = new URL(`https://graph.instagram.com/v25.0/${path}`);
+  const url = new URL(`https://graph.instagram.com/v21.0/${path}`);
   Object.entries(query || {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, value);
@@ -185,21 +189,31 @@ async function createInstagramCarousel({
     throw new Error('At least 2 image URLs are required to create a carousel');
   }
 
+  // Verify access token is valid before proceeding
+  try {
+    const profile = await graphGet(igUserId, { fields: 'id,username,account_type', access_token: accessToken });
+    console.log('[instagram] account verified:', JSON.stringify(profile));
+  } catch (err) {
+    console.error('[instagram] token/account verification failed:', err.message);
+    throw new Error(`Instagram token invalid or expired: ${err.message}`);
+  }
+
   console.log('[instagram] verifying image URLs:', imageUrls);
   await ensureImageUrls(imageUrls);
   console.log('[instagram] image URLs verified');
 
-  const mediaItems = await Promise.all(
-    imageUrls.map((imageUrl, i) => {
-      console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
-      return graphRequest(`${igUserId}/media`, {
-        image_url: imageUrl,
-        media_type: 'IMAGE',
-        is_carousel_item: 'true',
-        access_token: accessToken
-      });
-    })
-  );
+  const mediaItems = [];
+  for (let i = 0; i < imageUrls.length; i += 1) {
+    const imageUrl = imageUrls[i];
+    console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
+    const item = await graphRequest(`${igUserId}/media`, {
+      image_url: imageUrl,
+      is_carousel_item: 'true',
+      access_token: accessToken
+    });
+    mediaItems.push(item);
+    console.log(`[instagram] carousel item ${i + 1} created:`, item.id);
+  }
   console.log('[instagram] carousel items created:', mediaItems.map((m) => m.id));
 
   const children = mediaItems.map((media) => media.id);
