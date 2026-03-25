@@ -27,13 +27,13 @@ function createTempMediaUrl(req, base64Image, mimeType = 'image/png') {
     expiresAt: Date.now() + TEMP_MEDIA_TTL_MS
   });
 
-  const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
   const host = req.get('x-forwarded-host') || req.get('host');
   if (!host) {
     throw new Error('Unable to determine public host for temporary media URL');
   }
 
-  return `${protocol}://${host}/temp-media/${id}.png`;
+  // Always use https — Instagram requires HTTPS image URLs
+  return `https://${host}/temp-media/${id}.png`;
 }
 
 setInterval(pruneExpiredTempMedia, 60 * 1000).unref();
@@ -208,6 +208,7 @@ async function createInstagramCarousel({
     console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
     const item = await graphRequest(`${igUserId}/media`, {
       image_url: imageUrl,
+      media_type: 'IMAGE',
       is_carousel_item: 'true',
       access_token: accessToken
     });
