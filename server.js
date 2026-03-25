@@ -107,23 +107,21 @@ async function waitForCreationId(mediaId, accessToken, attempts = 15, delayMs = 
 }
 
 async function uploadToImgBB(base64Image, apiKey, name) {
-  const params = new URLSearchParams();
-  params.append('key', apiKey);
-  params.append('image', base64Image);
+  const form = new FormData();
+  form.append('key', apiKey);
+  form.append('image', base64Image);
   if (name) {
-    params.append('name', name);
+    form.append('name', name);
   }
 
   const response = await fetch('https://api.imgbb.com/1/upload', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: params.toString()
+    body: form
   });
 
   if (!response.ok) {
-    throw new Error(`imgBB upload failed with status ${response.status}`);
+    const errText = await response.text().catch(() => '');
+    throw new Error(`imgBB upload failed with status ${response.status}: ${errText}`);
   }
 
   const payload = await response.json();
