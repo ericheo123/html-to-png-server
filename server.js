@@ -681,12 +681,13 @@ app.post('/generate', async (req, res) => {
 
     if (publishToInstagram) {
       console.log('[generate] creating Instagram carousel');
-      const effectiveInstagramImageUrls = urls.length > 0 ? urls : instagramImageUrls;
-      console.log('[generate] using image URLs for Instagram (imgbb=%s):', urls.length > 0, effectiveInstagramImageUrls);
+      // Always use Render temp media URLs for Instagram — imgBB URLs may be
+      // blocked or inaccessible to Instagram's crawler.
+      console.log('[generate] using temp media URLs for Instagram:', instagramImageUrls);
       instagram = await createInstagramCarousel({
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
-        imageUrls: effectiveInstagramImageUrls,
+        imageUrls: instagramImageUrls,
         caption: caption || normalized.caption || '',
         publish: true
       });
