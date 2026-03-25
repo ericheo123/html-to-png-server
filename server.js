@@ -187,27 +187,32 @@ async function createInstagramCarousel({
     throw new Error('At least 2 image URLs are required to create a carousel');
   }
 
+  console.log('[instagram] verifying image URLs:', imageUrls);
   await ensureImageUrls(imageUrls);
+  console.log('[instagram] image URLs verified');
 
   const mediaItems = await Promise.all(
-    imageUrls.map((imageUrl) =>
-      graphRequest(`${igUserId}/media`, {
+    imageUrls.map((imageUrl, i) => {
+      console.log(`[instagram] creating carousel item ${i + 1}:`, imageUrl);
+      return graphRequest(`${igUserId}/media`, {
         image_url: imageUrl,
         is_carousel_item: 'true',
-        media_type: 'IMAGE',
         access_token: accessToken
-      })
-    )
+      });
+    })
   );
+  console.log('[instagram] carousel items created:', mediaItems.map((m) => m.id));
 
   const children = mediaItems.map((media) => media.id);
 
+  console.log('[instagram] creating carousel container with children:', children);
   const carousel = await graphRequest(`${igUserId}/media`, {
     media_type: 'CAROUSEL',
     caption,
     children: children.join(','),
     access_token: accessToken
   });
+  console.log('[instagram] carousel container created:', carousel.id);
 
   let published = null;
   if (publish) {
@@ -672,6 +677,7 @@ app.post('/generate', async (req, res) => {
     if (publishToInstagram) {
       console.log('[generate] creating Instagram carousel');
       const effectiveInstagramImageUrls = urls.length > 0 ? urls : instagramImageUrls;
+      console.log('[generate] using image URLs for Instagram (imgbb=%s):', urls.length > 0, effectiveInstagramImageUrls);
       instagram = await createInstagramCarousel({
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
