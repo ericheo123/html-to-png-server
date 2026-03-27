@@ -49,8 +49,9 @@ const broadFallbackFeeds = [
 const categoryConfig = {
   jobs_housing: {
     topic: '청년 취업과 주거비 부담',
-    cover: '[[취업]]도 [[주거비]]도 버겁다',
-    sub: '청년층의 출발 비용이 더 커지고 있습니다',
+    hero: '[[취업]]·[[주거비]]',
+    headline: '청년층의 출발 비용이 더 커지고 있습니다',
+    summary: '구직 기간과 주거비 부담이 동시에 커지는 흐름입니다.',
     action: [
       ['취업 준비생', '구직 기간과 현금흐름을 함께 관리하는 전략이 필요합니다.'],
       ['사회초년생', '월세와 관리비 등 고정비 구조부터 먼저 점검해 보세요.'],
@@ -61,8 +62,9 @@ const categoryConfig = {
   },
   household_debt: {
     topic: '가계부채와 이자 부담 확대',
-    cover: '[[빚]] 부담이 [[생활비]]를 누른다',
-    sub: '대출과 이자 비용이 소비 여력을 압박하는 흐름입니다',
+    hero: '[[가계부채]]',
+    headline: '빚 부담이 생활비까지 밀어내고 있습니다',
+    summary: '대출과 이자 비용이 소비 여력을 압박하는 흐름입니다.',
     action: [
       ['대출 보유자', '변동금리와 상환일정을 먼저 점검하세요.'],
       ['소비 관리', '이자 증가분이 어디서 새는지 고정비부터 보세요.'],
@@ -73,8 +75,9 @@ const categoryConfig = {
   },
   inflation_prices: {
     topic: '생활물가와 소비 부담',
-    cover: '[[물가]]가 오르면 [[생활비]]가 흔들린다',
-    sub: '장바구니 체감이 다시 커지는지 봐야 합니다',
+    hero: '[[생활물가]]',
+    headline: '물가가 오르면 생활비가 먼저 흔들립니다',
+    summary: '장바구니 체감이 다시 커지는지 봐야 합니다.',
     action: [
       ['장바구니 비용', '식비와 교통비, 공과금 변화를 따로 체크하세요.'],
       ['고정비 구조', '생활비 증가분이 반복지출인지 확인하세요.'],
@@ -85,8 +88,9 @@ const categoryConfig = {
   },
   oil_energy: {
     topic: '국제유가 상승과 생활비 충격',
-    cover: '[[유가]]가 오르면 [[생활비]]가 뛴다',
-    sub: '국제 변수지만 한국 체감은 빠르게 옵니다',
+    hero: '[[국제유가]]',
+    headline: '유가가 오르면 생활비도 바로 반응합니다',
+    summary: '국제 변수지만 한국 체감은 빠르게 옵니다.',
     action: [
       ['주유·교통비', '유가가 오를 때 가장 먼저 체감되는 항목입니다.'],
       ['장바구니 비용', '운송비가 음식과 생필품 가격에 번지는지 보세요.'],
@@ -97,8 +101,9 @@ const categoryConfig = {
   },
   tariffs_trade: {
     topic: '관세·무역 변화와 한국 영향',
-    cover: '[[관세]] 변화가 [[한국경제]]를 흔든다',
-    sub: '무역 뉴스도 결국 체감 경제 뉴스입니다',
+    hero: '[[관세]] 변화',
+    headline: '무역 뉴스도 결국 한국 경제 이야기입니다',
+    summary: '관세 변화는 수출과 환율, 물가까지 연결됩니다.',
     action: [
       ['수출 업종', '반도체·자동차·배터리 뉴스와 함께 보세요.'],
       ['환율 흐름', '무역 이슈는 환율 변동으로 빠르게 연결될 수 있습니다.'],
@@ -109,8 +114,9 @@ const categoryConfig = {
   },
   ai_semiconductor: {
     topic: 'AI·반도체 경쟁과 한국 산업',
-    cover: '[[AI]]와 [[반도체]] 경쟁이 한국을 흔든다',
-    sub: '기술 뉴스도 결국 산업과 자산 흐름의 이야기입니다',
+    hero: '[[AI]]·[[반도체]]',
+    headline: '기술 뉴스도 결국 한국 산업과 자산의 이야기입니다',
+    summary: 'AI 수요와 반도체 투자가 한국 산업에 주는 신호입니다.',
     action: [
       ['기술주 보유자', 'AI·반도체 뉴스는 주가 변동성과 함께 보세요.'],
       ['수출 뉴스', '한국 수출 품목 구조와 연결해서 보세요.'],
@@ -121,8 +127,9 @@ const categoryConfig = {
   },
   rates_fx: {
     topic: '금리·환율 변화와 자산 영향',
-    cover: '[[금리]]와 [[환율]] 변화가 자산을 흔든다',
-    sub: '글로벌 뉴스지만 한국 체감은 빠르게 옵니다',
+    hero: '[[금리]]·[[환율]]',
+    headline: '금리와 환율 변화가 자산을 흔들 수 있습니다',
+    summary: '글로벌 뉴스지만 한국 체감은 빠르게 옵니다.',
     action: [
       ['대출 보유자', '변동금리와 상환 구조부터 점검하세요.'],
       ['해외투자자', '환율이 수익률에 미치는 영향을 같이 보세요.'],
@@ -133,8 +140,9 @@ const categoryConfig = {
   },
   general: {
     topic: '오늘 한국이 봐야 할 핵심 이슈',
-    cover: '[[지금]] 한국이 봐야 할 핵심 뉴스',
-    sub: '오늘 체감 영향이 큰 이슈를 빠르게 정리했습니다',
+    hero: '[[오늘 이슈]]',
+    headline: '한국이 지금 같이 봐야 할 핵심 뉴스입니다',
+    summary: '오늘 체감 영향이 큰 이슈를 빠르게 정리했습니다.',
     action: [
       ['생활 영향', '생활비와 주거, 취업에 어떤 영향을 줄지 보세요.'],
       ['자산 영향', '금리와 환율, 증시 연결 여부를 확인하세요.'],
@@ -148,6 +156,7 @@ const categoryConfig = {
 function decodeHtml(value = '') {
   return String(value || '')
     .replace(/<!\[CDATA\[(.*?)\]\]>/gs, '$1')
+    .replace(/&nbsp;|&#160;/g, ' ')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&apos;/g, "'")
@@ -228,9 +237,95 @@ function scoreCandidate(item) {
 
 function titleSummary(title = '') {
   return title
+    .replace(/^\[[^\]]+\]\s*/g, '')
+    .replace(/^'([^']+)'\s*/g, '$1 ')
     .replace(/\s+-\s+.*$/, '')
     .replace(/\s+\|\s+.*$/, '')
+    .replace(/\s*-\s*연합뉴스$/, '')
+    .replace(/\s*-\s*[^-]+신문$/, '')
+    .replace(/\s*-\s*[^-]+뉴스$/, '')
     .trim();
+}
+
+function firstSentence(text = '', maxLength = 48) {
+  const clean = decodeHtml(text)
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return '';
+  const sentence = clean.split(/(?<=[.!?])\s+/)[0] || clean;
+  return sentence.length > maxLength ? `${sentence.slice(0, maxLength).trim()}...` : sentence;
+}
+
+function stripQuotes(text = '') {
+  return String(text || '')
+    .replace(/[“”"'`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickHeroFromTitle(category, title, fallback) {
+  const clean = stripQuotes(titleSummary(title));
+  const keywordMap = {
+    jobs_housing: [/청년.*주거비|주거비.*청년/, '청년 주거비'],
+    household_debt: [/고위험 가구|가계 적자|가계부채|이자 부담/, '가계부채'],
+    inflation_prices: [/생활물가|물가|장바구니/, '생활물가'],
+    oil_energy: [/국제유가|유가|원유/, '국제유가'],
+    tariffs_trade: [/관세|무역|수출/, '관세 변화'],
+    ai_semiconductor: [/ai 반도체|반도체 수요|반도체/, 'AI 반도체'],
+    rates_fx: [/금리|환율|달러|원화/, '금리·환율'],
+  };
+  const [pattern, value] = keywordMap[category] || [];
+  if (pattern && pattern.test(clean.toLowerCase())) {
+    return value;
+  }
+
+  const compact = clean
+    .replace(/참여|교수|한국|대한민국|경제가|무엇이|달라졌나|가능성|영향|분석/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (compact && compact.length <= 12) return compact;
+  if (compact) return compact.slice(0, 12).trim();
+  return fallback;
+}
+
+function buildCoverCopy(category, selected, config) {
+  const cleanTitle = stripQuotes(titleSummary(selected.title));
+  const cleanDesc = firstSentence(selected.description, 54);
+  const heroBase = pickHeroFromTitle(category, cleanTitle, stripQuotes(config.hero || config.topic || '오늘 이슈'));
+  const headlineMap = {
+    jobs_housing: `${cleanTitle || '청년층의 출발 비용이 커지고 있습니다'}`,
+    household_debt: `${cleanTitle || '빚 부담이 생활비까지 누르고 있습니다'}`,
+    inflation_prices: `${cleanTitle || '물가와 생활비 흐름을 같이 봐야 합니다'}`,
+    oil_energy: `${cleanTitle || '국제유가 변화가 생활비에 먼저 번집니다'}`,
+    tariffs_trade: `${cleanTitle || '무역 변화가 한국 경제에 주는 신호입니다'}`,
+    ai_semiconductor: `${cleanTitle || 'AI 수요가 한국 반도체에 주는 신호입니다'}`,
+    rates_fx: `${cleanTitle || '금리와 환율이 자산 흐름을 좌우할 수 있습니다'}`,
+    general: cleanTitle || config.headline,
+  };
+  return {
+    hero: `[[${heroBase}]]`,
+    headline: headlineMap[category] || config.headline,
+    summary: cleanDesc || config.summary,
+  };
+}
+
+function buildClosingCopy(category, selected, metrics) {
+  const cleanTitle = stripQuotes(titleSummary(selected.title));
+  const closingTitleMap = {
+    jobs_housing: '[[구직 기간]]과 [[주거비]]를 같이 봐야 합니다',
+    household_debt: '[[이자 부담]]과 [[생활비]]를 같이 봐야 합니다',
+    inflation_prices: '[[물가]]와 [[생활비]]를 같이 봐야 합니다',
+    oil_energy: '[[유가]]와 [[생활비]]를 같이 봐야 합니다',
+    tariffs_trade: '[[관세]]와 [[한국경제]]를 같이 봐야 합니다',
+    ai_semiconductor: '[[AI 수요]]와 [[반도체]]를 같이 봐야 합니다',
+    rates_fx: '[[금리]]와 [[환율]]을 같이 봐야 합니다',
+    general: '[[핵심 숫자]]와 [[체감 영향]]을 같이 봐야 합니다',
+  };
+  return {
+    title: closingTitleMap[category] || closingTitleMap.general,
+    summary: `${cleanTitle || '이번 이슈'}. 핵심은 ${metrics[0] || '첫 번째 수치'}와 ${metrics[1] || '두 번째 흐름'}입니다.`,
+    cta: '저장해두고 다음 기사와 숫자 변화를 비교해 보세요.',
+  };
 }
 
 function toImpactItems(category, metrics, description) {
@@ -398,8 +493,10 @@ const category = pickCategory(`${selected.title} ${selected.description}`);
 const config = categoryConfig[category] || categoryConfig.general;
 const metrics = extractMetrics(`${selected.title} ${selected.description}`);
 const mainTitle = titleSummary(selected.title);
-const summary = selected.description || '한국 체감 영향이 큰 오늘의 이슈입니다.';
+const summary = firstSentence(selected.description, 64) || '한국 체감 영향이 큰 오늘의 이슈입니다.';
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+const coverCopy = buildCoverCopy(category, selected, config);
+const closingCopy = buildClosingCopy(category, selected, metrics);
 
 return [
   {
@@ -407,7 +504,7 @@ return [
       topic: config.topic,
       sourceUrl: selected.link,
       sourceTitle: selected.title,
-      caption: `${config.topic}\n\n${mainTitle}\n\n💾 저장해두고 나중에 다시 보세요!\n👉 팔로우하면 매일 뉴스 카드뉴스 받아요\n\n${config.tags.join(' ')}`,
+      caption: `${config.topic}\n\n${mainTitle}\n${summary}\n\n💾 저장해두고 나중에 다시 보세요!\n👉 팔로우하면 매일 뉴스 카드뉴스 받아요\n\n${config.tags.join(' ')}`,
       selectionCandidates: scored.map((item) => ({
         title: item.title,
         link: item.link,
@@ -423,37 +520,37 @@ return [
           {
             type: 'cover',
             eyebrow: selected.lane === 'global' ? '글로벌 시사 브리핑' : '국내 시사 브리핑',
-            headline_main: config.cover,
-            headline_sub: config.sub,
-            summary,
+            headline_main: coverCopy.hero,
+            headline_sub: coverCopy.headline,
+            summary: coverCopy.summary,
             hashtags: config.tags,
           },
           {
             type: 'stats',
             eyebrow: '핵심 팩트',
-            title: '숫자로 보면 더 선명한 포인트',
+            title: '숫자로 보면 더 선명한 핵심',
             hero: {
-              label: '가장 먼저 볼 숫자',
+              label: '가장 먼저 볼 지점',
               title: metrics[0] || '핵심 수치',
-              desc: '기사와 한국 체감 영향을 연결하는 기준선입니다.',
+              desc: '기사와 한국 체감 영향을 연결하는 첫 번째 기준선입니다.',
             },
             items: [
-              { label: '기사 출처', value: selected.source || '한국 뉴스', desc: '후보 기사 중 체감 영향이 큰 이슈를 선택했습니다.' },
-              { label: '기사 시점', value: selected.pubDate ? selected.pubDate.slice(0, 16) : '최신', desc: '최근성을 우선해 후보를 추렸습니다.' },
-              { label: '보조 수치', value: metrics[1] || metrics[0] || '핵심 수치', desc: '기사 설명에서 함께 잡힌 보조 지표입니다.' },
-              { label: '추가 변수', value: metrics[2] || '체감 변수', desc: '후속 기사와 비교할 때 쓸 기준선입니다.' },
+              { label: '기사 출처', value: selected.source || '한국 뉴스', desc: '한국 독자가 체감하기 쉬운 기사 흐름을 골랐습니다.' },
+              { label: '기사 시점', value: selected.pubDate ? selected.pubDate.slice(5, 16) : '최신', desc: '오늘 흐름 안에서 읽을 만한 최신 기사입니다.' },
+              { label: '보조 수치', value: metrics[1] || metrics[0] || '핵심 수치', desc: '첫 번째 숫자와 같이 봐야 하는 보조 지표입니다.' },
+              { label: '추가 변수', value: metrics[2] || '체감 변수', desc: '다음 기사와 비교할 때 쓸 체크포인트입니다.' },
             ],
           },
           {
             type: 'impact',
             eyebrow: '배경·원인',
-            title: '왜 지금 더 중요할까',
+            title: '왜 지금 같이 봐야 할까',
             items: toImpactItems(category, metrics, summary),
           },
           {
             type: 'causes',
             eyebrow: '상세 흐름',
-            title: '기사 핵심을 3단계로 보면',
+            title: '기사 핵심을 세 단계로 보면',
             items: [
               { label: '현재 수치', value: metrics[0] || '핵심 수치', desc: '이번 기사에서 가장 먼저 봐야 할 기준선입니다.' },
               { label: '연결 수치', value: metrics[1] || metrics[0] || '보조 수치', desc: '흐름을 읽는 데 필요한 연결 지표입니다.' },
@@ -466,13 +563,13 @@ return [
             eyebrow: '영향·대응',
             title: '지금 체크할 포인트',
             items: config.action.map(([label, desc]) => ({ label, desc })),
-            closing: '뉴스는 숫자와 체감 영향을 함께 볼 때 더 잘 읽힙니다.',
+            closing: '숫자와 체감 영향을 같이 볼 때 카드뉴스가 더 잘 읽힙니다.',
           },
           {
             type: 'closing',
-            title: `[[핵심 숫자]]와 [[체감 영향]]을 같이 봐야 합니다`,
-            summary: `${mainTitle}. 핵심은 ${metrics[0] || '핵심 수치'}, ${metrics[1] || '보조 수치'}, ${metrics[2] || '추가 변수'}입니다.`,
-            cta: '저장해두고 다음 기사와 숫자 변화를 비교해 보세요.',
+            title: closingCopy.title,
+            summary: closingCopy.summary,
+            cta: closingCopy.cta,
             hashtags: config.tags,
           },
         ],
