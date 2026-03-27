@@ -26,6 +26,8 @@
 
 ## 빠른 시작
 
+지금 구조에선 `docker compose`만 있으면 충분합니다. `make`는 필수는 아니고, 반복 명령을 줄이기 위한 편의용입니다.
+
 1. `n8n/.env.example` 를 복사해 `n8n/.env` 생성
 2. 비밀번호와 암호화 키를 변경
 3. 아래 명령 실행
@@ -39,6 +41,58 @@ docker compose up -d
 4. 브라우저에서 `http://localhost:5678` 접속
 5. n8n 첫 관리자 계정 생성
 6. [n8n_workflow_instagram_news.json](/Users/ericheo/Documents/CODEX/html-to-png-server/n8n_workflow_instagram_news.json) import
+
+## 더 간단하게 쓰는 방법
+
+[n8n/Makefile](/Users/ericheo/Documents/CODEX/html-to-png-server/n8n/Makefile) 도 같이 넣어뒀습니다.
+
+```bash
+cd /Users/ericheo/Documents/CODEX/html-to-png-server/n8n
+make init
+make up
+make open
+```
+
+자주 쓰는 명령:
+
+- `make up`
+- `make down`
+- `make restart`
+- `make logs`
+- `make ps`
+- `make open`
+
+## 질문에 적은 항목들을 지금 구조로 다시 정리하면
+
+필수:
+- Docker 설치
+- `n8n/.env` 생성
+- `docker compose up -d`
+- `http://localhost:5678` 접속
+
+선택:
+- 별도 Docker volume 수동 생성
+  현재는 `docker-compose.yml`의 `./data` 바인드 마운트로 충분합니다.
+- Docker Desktop에서 이미지/컨테이너 확인
+  확인용으로 좋지만 필수는 아닙니다.
+- 로컬 호스트 파일 수정
+  커스텀 도메인 붙일 때만 필요합니다. 지금은 `localhost:5678`이면 충분합니다.
+- `make`
+  필수는 아니지만 반복 작업에는 편합니다.
+
+## 접속 도메인과 타임존
+
+로컬 테스트 기준 기본값:
+
+- 접속 주소: `http://localhost:5678`
+- 타임존: `Asia/Seoul`
+
+커스텀 도메인을 붙일 때만 `.env`에서 아래를 바꾸면 됩니다.
+
+- `N8N_HOST`
+- `N8N_PROTOCOL`
+- `WEBHOOK_URL`
+- `N8N_EDITOR_BASE_URL`
 
 ## n8n에서 바꿔야 하는 값
 
