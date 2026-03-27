@@ -22,6 +22,9 @@ const PAPERLOGY_FONT = fs.existsSync(PAPERLOGY_PATH)
 const UI_FONT = PAPERLOGY_FONT
   ? "'Paperlogy','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"
   : "'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif";
+const DISPLAY_FONT = PAPERLOGY_FONT
+  ? "'Paperlogy','Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif"
+  : UI_FONT;
 
 function sanitizeText(value = '') {
   return String(value || '')
@@ -431,7 +434,7 @@ function badge(label, color) {
 function renderCover(card, date) {
   const eyebrow = plainLines(card.eyebrow || '', 340, 20, 1);
   const eyebrowWidth = Math.max(170, Math.min(340, eyebrow.length * 18 + 54));
-  const displayFont = UI_FONT;
+  const displayFont = DISPLAY_FONT;
   const leadHeadline = coverHeadline(card.hero2 || '');
 
   return `
@@ -481,10 +484,10 @@ function renderStats(card, date) {
   return `
     ${background(false)}
     ${badge(card.badge || '', RED)}
-    ${fittedTextBlock({ x: SIDE, y: 122, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 46 })}
+    ${fittedTextBlock({ x: SIDE, y: 122, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 46, fontFamily: DISPLAY_FONT })}
     ${roundedRect({ x: SIDE, y: 300, width: WIDTH - SIDE * 2, height: 252, fill: '#22242c', stroke: 'rgba(245,158,11,0.16)', radius: 26 })}
     ${textBlock({ x: SIDE + 28, y: 332, text: hero.label || '', width: WIDTH - SIDE * 2 - 56, fontSize: 22, lineHeight: 26, fill: YELLOW, weight: 800, maxLines: 1 })}
-    ${fittedTextBlock({ x: SIDE + 28, y: 376, text: hero.title || '', width: WIDTH - SIDE * 2 - 56, fontSize: 54, lineHeight: 58, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 36 })}
+    ${fittedTextBlock({ x: SIDE + 28, y: 376, text: hero.title || '', width: WIDTH - SIDE * 2 - 56, fontSize: 54, lineHeight: 58, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 36, fontFamily: DISPLAY_FONT })}
     ${multilinePlainText({ x: SIDE + 28, y: 470, text: hero.desc || '', width: WIDTH - SIDE * 2 - 56, fontSize: 24, lineHeight: 34, fill: MUTED, weight: 620, maxLines: 2 })}
     ${renderSupportCards(items)}
     ${footer(2, date)}
@@ -504,7 +507,7 @@ function renderSupportCards(items) {
       <rect x="${SIDE + 18}" y="${y + 26}" width="66" height="66" rx="18" fill="rgba(255,255,255,0.06)" />
       ${renderPathIcon({ x: SIDE + 51, y: y + 59, size: 28, color: index === 2 ? YELLOW : WHITE, token: item.ico })}
       ${eyebrow ? textBlock({ x: SIDE + 102, y: y + 18, text: eyebrow, width: WIDTH - SIDE * 2 - 128, fontSize: 18, lineHeight: 22, fill: MUTED_SOFT, weight: 800, maxLines: 1 }) : ''}
-      ${fittedTextBlock({ x: SIDE + 102, y: y + (eyebrow ? 40 : 30), text: title, width: WIDTH - SIDE * 2 - 128, fontSize: 38, lineHeight: 42, fill: index === 2 ? YELLOW : WHITE, weight: 920, maxLines: 2, minFontSize: 28 })}
+      ${fittedTextBlock({ x: SIDE + 102, y: y + (eyebrow ? 40 : 30), text: title, width: WIDTH - SIDE * 2 - 128, fontSize: 38, lineHeight: 42, fill: index === 2 ? YELLOW : WHITE, weight: 920, maxLines: 2, minFontSize: 28, fontFamily: DISPLAY_FONT })}
       ${multilinePlainText({ x: SIDE + 102, y: y + (eyebrow ? 102 : 94), text: item.desc || '', width: WIDTH - SIDE * 2 - 128, fontSize: 21, lineHeight: 29, fill: MUTED, weight: 620, maxLines: 2 })}
     `;
   }).join('');
@@ -521,7 +524,7 @@ function renderImpact(card, date) {
   return `
     ${background(false)}
     ${badge(card.badge || '', RED)}
-    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48 })}
+    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48, fontFamily: DISPLAY_FONT })}
     ${items.slice(0, 4).map((item, index) => {
       const y = 292 + index * 184;
       const accent = accentColors[index % accentColors.length];
@@ -529,7 +532,7 @@ function renderImpact(card, date) {
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
         ${renderPathIcon({ x: SIDE + 56, y: y + 64, size: 30, color: accent.icon, token: item.ico })}
-        ${fittedTextBlock({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 40 : 30), text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30 })}
+        ${fittedTextBlock({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 40 : 30), text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30, fontFamily: DISPLAY_FONT })}
         ${multilinePlainText({ x: SIDE + 110, y: y + (item.label && item.label !== item.title ? 96 : 92), text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 22, lineHeight: 30, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
     }).join('')}
@@ -542,14 +545,14 @@ function renderCauses(card, date) {
   return `
     ${background(false)}
     ${badge(card.badge || '', RED)}
-    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48 })}
+    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48, fontFamily: DISPLAY_FONT })}
     ${items.slice(0, 3).map((item, index) => {
       const y = 300 + index * 192;
       return `
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 168, fill: index === 2 ? CARD_BG : CARD_ALT, radius: 24 })}
         <circle cx="${SIDE + 48}" cy="${y + 54}" r="28" fill="rgba(251,191,36,0.18)" />
         <text x="${SIDE + 48}" y="${y + 64}" text-anchor="middle" font-family="${UI_FONT}" font-size="30" font-weight="900" fill="${YELLOW}">${index + 1}</text>
-        ${fittedTextBlock({ x: SIDE + 96, y: y + 22, text: item.title || '', width: WIDTH - SIDE * 2 - 126, fontSize: 46, lineHeight: 50, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 32 })}
+        ${fittedTextBlock({ x: SIDE + 96, y: y + 22, text: item.title || '', width: WIDTH - SIDE * 2 - 126, fontSize: 46, lineHeight: 50, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 32, fontFamily: DISPLAY_FONT })}
         ${multilinePlainText({ x: SIDE + 96, y: y + 94, text: item.desc || '', width: WIDTH - SIDE * 2 - 126, fontSize: 22, lineHeight: 30, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
     }).join('')}
@@ -573,7 +576,7 @@ function renderAction(card, date) {
   return `
     ${background(false)}
     ${badge(card.badge || '', GREEN)}
-    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48 })}
+    ${fittedTextBlock({ x: SIDE, y: 118, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 68, lineHeight: 74, fill: WHITE, weight: 920, maxLines: 3, minFontSize: 48, fontFamily: DISPLAY_FONT })}
     ${items.slice(0, 4).map((item, index) => {
       const y = 292 + index * 184;
       const accent = accentColors[index % accentColors.length];
@@ -581,7 +584,7 @@ function renderAction(card, date) {
         ${roundedRect({ x: SIDE, y, width: WIDTH - SIDE * 2, height: 162, fill: CARD_BG, radius: 24 })}
         <rect x="${SIDE + 20}" y="${y + 28}" width="72" height="72" rx="20" fill="${accent.box}" stroke="rgba(255,255,255,0.05)" />
         ${renderPathIcon({ x: SIDE + 56, y: y + 64, size: 30, color: accent.icon, token: item.ico })}
-        ${fittedTextBlock({ x: SIDE + 110, y: y + 30, text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30 })}
+        ${fittedTextBlock({ x: SIDE + 110, y: y + 30, text: item.title || '', width: WIDTH - SIDE * 2 - 144, fontSize: 38, lineHeight: 42, fill: WHITE, weight: 920, maxLines: 2, minFontSize: 30, fontFamily: DISPLAY_FONT })}
         ${multilinePlainText({ x: SIDE + 110, y: y + 94, text: item.desc || '', width: WIDTH - SIDE * 2 - 144, fontSize: 22, lineHeight: 30, fill: MUTED, weight: 620, maxLines: 2 })}
       `;
     }).join('')}
@@ -599,11 +602,11 @@ function renderClosing(card, date) {
   return `
     ${background(true)}
     ${lineChartIcon({ x: WIDTH / 2 - 42, y: 158, size: 84, color: YELLOW })}
-    ${fittedTextBlock({ x: SIDE, y: 308, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 72, lineHeight: 80, fill: WHITE, weight: 920, anchor: 'middle', maxLines: 3, minFontSize: 46 })}
+    ${fittedTextBlock({ x: SIDE, y: 308, text: card.title || '', width: WIDTH - SIDE * 2, fontSize: 72, lineHeight: 80, fill: WHITE, weight: 920, anchor: 'middle', maxLines: 3, minFontSize: 46, fontFamily: DISPLAY_FONT })}
     <rect x="${SIDE + 86}" y="566" width="${WIDTH - (SIDE + 86) * 2}" height="6" rx="3" fill="rgba(251,191,36,0.85)" />
     ${multilinePlainText({ x: SIDE + 20, y: 614, text: summary || '', width: WIDTH - SIDE * 2 - 40, fontSize: 27, lineHeight: 40, fill: MUTED, weight: 640, anchor: 'middle', maxLines: 3 })}
     <rect x="${SIDE + 90}" y="770" width="${WIDTH - (SIDE + 90) * 2}" height="96" rx="24" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.08)" />
-    ${fittedTextBlock({ x: SIDE + 120, y: 798, text: cta || '', width: WIDTH - (SIDE + 120) * 2, fontSize: 32, lineHeight: 38, fill: WHITE, weight: 860, anchor: 'middle', maxLines: 2, minFontSize: 26 })}
+    ${fittedTextBlock({ x: SIDE + 120, y: 798, text: cta || '', width: WIDTH - (SIDE + 120) * 2, fontSize: 32, lineHeight: 38, fill: WHITE, weight: 860, anchor: 'middle', maxLines: 2, minFontSize: 26, fontFamily: DISPLAY_FONT })}
     ${renderChips(card.tags || [], 906)}
     ${footer(6, date)}
   `;

@@ -1,6 +1,13 @@
 const crypto = require('crypto');
 const express = require('express');
 const { renderCardsWithSvg } = require('./svgRenderer');
+const {
+  HISTORY_PATH,
+  buildKeys,
+  loadHistory,
+  findDuplicate,
+  appendHistory
+} = require('./publishState');
 
 const app = express();
 app.use(express.json({ limit: '20mb' }));
@@ -38,14 +45,50 @@ function createTempMediaUrl(req, base64Image, mimeType = 'image/jpeg') {
 
 setInterval(pruneExpiredTempMedia, 60 * 1000).unref();
 
+function describeFetchError(err, fallbackMessage) {
+  const parts = [fallbackMessage];
+  if (err?.message) parts.push(err.message);
+  if (err?.cause?.message) parts.push(`cause=${err.cause.message}`);
+  return parts.join(' | ');
+}
+
+function getBaseUrl() {
+  return process.env.INSTAGRAM_GRAPH_BASE_URL || 'https://graph.instagram.com/v25.0';
+}
+
+function getTriggerToken() {
+  return process.env.AUTOMATION_TRIGGER_TOKEN || '';
+}
+
+function requireAuth(req, res, next) {
+  const requiredToken = getTriggerToken();
+  if (!requiredToken) {
+    next();
+    return;
+  }
+
+  const providedToken = req.get('x-automation-token') || req.get('authorization')?.replace(/^Bearer\s+/i, '');
+  if (providedToken !== requiredToken) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  next();
+}
+
 async function graphRequest(path, params) {
-  const response = await fetch(`https://graph.instagram.com/v21.0/${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded'
-    },
-    body: new URLSearchParams(params).toString()
-  });
+  let response;
+  try {
+    response = await fetch(`${getBaseUrl()}/${path}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(params).toString()
+    });
+  } catch (err) {
+    throw new Error(describeFetchError(err, `Instagram API fetch failed: ${path}`));
+  }
 
   const payload = await response.json();
   if (!response.ok || payload.error) {
@@ -61,14 +104,19 @@ async function graphRequest(path, params) {
 }
 
 async function graphGet(path, query) {
-  const url = new URL(`https://graph.instagram.com/v21.0/${path}`);
+  const url = new URL(`${getBaseUrl()}/${path}`);
   Object.entries(query || {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, value);
     }
   });
 
-  const response = await fetch(url.toString(), { method: 'GET' });
+  let response;
+  try {
+    response = await fetch(url.toString(), { method: 'GET' });
+  } catch (err) {
+    throw new Error(describeFetchError(err, `Instagram API GET fetch failed: ${path}`));
+  }
   const payload = await response.json();
   if (!response.ok || payload.error) {
     const message = payload?.error?.message || `Instagram GET failed with status ${response.status}`;
@@ -118,10 +166,15 @@ async function uploadToImgBB(base64Image, apiKey, name) {
     form.append('name', name);
   }
 
-  const response = await fetch('https://api.imgbb.com/1/upload', {
-    method: 'POST',
-    body: form
-  });
+  let response;
+  try {
+    response = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body: form
+    });
+  } catch (err) {
+    throw new Error(describeFetchError(err, 'imgBB upload fetch failed'));
+  }
 
   if (!response.ok) {
     const errText = await response.text().catch(() => '');
@@ -138,6 +191,105 @@ async function uploadToImgBB(base64Image, apiKey, name) {
     url: payload.data.image?.url || payload.data.url,
     deleteUrl: payload.data.delete_url
   };
+}
+
+function signCloudinaryParams(params, apiSecret) {
+  const toSign = Object.entries(params)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('&');
+
+  return crypto.createHash('sha1').update(toSign + apiSecret).digest('hex');
+}
+
+async function uploadToCloudinary(base64Image, { cloudName, apiKey, apiSecret, name }) {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const publicId = name || `card-${timestamp}`;
+  const folder = process.env.CLOUDINARY_FOLDER || 'instagram_cardnews';
+  const paramsToSign = { folder, public_id: publicId, timestamp };
+  const signature = signCloudinaryParams(paramsToSign, apiSecret);
+
+  const body = new URLSearchParams({
+    file: `data:image/png;base64,${base64Image}`,
+    api_key: apiKey,
+    timestamp: String(timestamp),
+    signature,
+    folder,
+    public_id: publicId
+  });
+
+  let response;
+  try {
+    response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString()
+    });
+  } catch (err) {
+    throw new Error(describeFetchError(err, 'Cloudinary upload fetch failed'));
+  }
+
+  const payload = await response.json();
+  if (!response.ok || !payload.secure_url) {
+    throw new Error(payload?.error?.message || 'Cloudinary upload failed');
+  }
+
+  return {
+    id: payload.public_id,
+    url: payload.secure_url,
+    deleteUrl: null
+  };
+}
+
+async function notifySlack(text) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+  } catch (err) {
+    throw new Error(describeFetchError(err, 'Slack webhook fetch failed'));
+  }
+}
+
+async function runPreflightChecks() {
+  const accessToken = process.env.INSTAGRAM_ACCESS_TOKEN || '';
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || '';
+  const slackWebhookUrl = process.env.SLACK_WEBHOOK_URL || '';
+  const checks = [];
+
+  const tryFetch = async (label, url, options = {}) => {
+    try {
+      const response = await fetch(url, options);
+      return { label, ok: true, status: response.status, statusText: response.statusText };
+    } catch (err) {
+      return {
+        label,
+        ok: false,
+        error: err?.message || String(err),
+        cause: err?.cause?.message || ''
+      };
+    }
+  };
+
+  checks.push(await tryFetch('instagram_base', `${getBaseUrl()}/me?fields=user_id&access_token=${encodeURIComponent(accessToken)}`));
+  if (cloudName) {
+    checks.push(await tryFetch('cloudinary_api', `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, { method: 'OPTIONS' }));
+  }
+  if (slackWebhookUrl) {
+    checks.push(await tryFetch('slack_webhook', slackWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'preflight-check' })
+    }));
+  }
+
+  return checks;
 }
 
 async function ensureImageUrl(url) {
@@ -249,7 +401,30 @@ async function createInstagramCarousel({
 }
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    time: new Date().toISOString(),
+    historyPath: HISTORY_PATH
+  });
+});
+
+app.get('/history', requireAuth, (req, res) => {
+  const history = loadHistory();
+  const limit = Math.max(1, Math.min(100, Number(req.query.limit || 20)));
+  res.json({
+    count: history.items?.length || 0,
+    items: (history.items || []).slice(0, limit)
+  });
+});
+
+app.post('/preflight', requireAuth, async (req, res) => {
+  try {
+    const checks = await runPreflightChecks();
+    const ok = checks.every((check) => check.ok || check.label === 'slack_webhook');
+    res.status(ok ? 200 : 503).json({ ok, checks });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message || String(err) });
+  }
 });
 
 app.get('/temp-media/:id', (req, res) => {
@@ -650,15 +825,20 @@ async function renderCards(normalized) {
   return renderCardsWithSvg(normalized);
 }
 
-app.post('/generate', async (req, res) => {
+app.post('/generate', requireAuth, async (req, res) => {
   const {
     data,
     imgbbKey,
+    uploadProvider,
     instagramAccessToken,
     instagramUserId,
     caption,
+    sourceUrl,
+    sourceTitle,
+    topic,
     publishToInstagram = false,
-    includeDebugAssets = false
+    includeDebugAssets = false,
+    notifySlackOnPublish = true
   } = req.body;
   if (!data) {
     return res.status(400).json({ error: 'data field is required' });
@@ -669,10 +849,42 @@ app.post('/generate', async (req, res) => {
     console.log('[generate] request received');
     const normalized = normalizeData(data);
     console.log('[generate] payload normalized');
+    const effectiveCaption = caption || normalized.caption || '';
+    const duplicateKeys = buildKeys({
+      sourceUrl: sourceUrl || req.body.source?.url || '',
+      sourceTitle: sourceTitle || req.body.source?.title || '',
+      topic: topic || normalized.topic || '',
+      caption: effectiveCaption
+    });
+    const duplicate = findDuplicate(loadHistory(), duplicateKeys);
+
+    if (publishToInstagram && duplicate) {
+      return res.status(409).json({
+        error: 'Duplicate source already published',
+        duplicate
+      });
+    }
+
     const { images, debugHtml } = await renderCards(normalized);
     const instagramImageUrls = images.map((image) => createTempMediaUrl(req, image));
 
+    const checks = publishToInstagram ? await runPreflightChecks() : [];
+    if (publishToInstagram) {
+      const failedRequired = checks.find((check) => !check.ok && check.label !== 'slack_webhook');
+      if (failedRequired) {
+        return res.status(503).json({
+          error: 'Preflight failed',
+          checks
+        });
+      }
+    }
+
     const effectiveImgBBKey = imgbbKey || process.env.IMGBB_API_KEY;
+    const effectiveProvider =
+      uploadProvider ||
+      (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET
+        ? 'cloudinary'
+        : 'imgbb');
     let uploads = [];
     let urls = [];
     let instagram = null;
@@ -691,6 +903,29 @@ app.post('/generate', async (req, res) => {
         }
       }
       urls = uploads.map((item) => item.url);
+    } else if (effectiveProvider === 'cloudinary') {
+      console.log('[generate] uploading images to Cloudinary');
+      uploads = await Promise.all(
+        images.map((image, index) =>
+          uploadToCloudinary(image, {
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            apiKey: process.env.CLOUDINARY_API_KEY,
+            apiSecret: process.env.CLOUDINARY_API_SECRET,
+            name: `card-${index + 1}-${Date.now()}`
+          })
+        )
+      );
+      urls = uploads.map((item) => item.url);
+    } else if (effectiveImgBBKey) {
+      console.log('[generate] uploading images to imgBB');
+      uploads = await Promise.all(
+        images.map((image, index) =>
+          uploadToImgBB(image, effectiveImgBBKey, `card-${index + 1}-${Date.now()}.png`)
+        )
+      );
+      urls = uploads.map((item) => item.url);
+    } else if (publishToInstagram) {
+      throw new Error('No upload provider configured. Set Cloudinary or imgBB credentials.');
     }
 
     if (publishToInstagram) {
@@ -704,16 +939,37 @@ app.post('/generate', async (req, res) => {
         igUserId: instagramUserId || process.env.INSTAGRAM_USER_ID,
         accessToken: instagramAccessToken || process.env.INSTAGRAM_ACCESS_TOKEN,
         imageUrls: igImageUrls,
-        caption: caption || normalized.caption || '',
+        caption: effectiveCaption,
         publish: true
       });
+
+      appendHistory({
+        createdAt: new Date().toISOString(),
+        publishId: instagram.publishId,
+        topic: topic || normalized.topic || '',
+        ...duplicateKeys
+      });
+
+      if (notifySlackOnPublish) {
+        await notifySlack(
+          [
+            ':white_check_mark: Instagram publish complete',
+            `topic: ${topic || normalized.topic || ''}`,
+            `source: ${duplicateKeys.sourceUrl || 'n/a'}`,
+            `publish_id: ${instagram.publishId}`
+          ].join('\n')
+        );
+      }
     }
 
     console.log(`[generate] response sent in ${Date.now() - startedAt}ms`);
     const response = {
       count: images.length,
       uploaded: urls.length,
-      instagram
+      instagram,
+      checks,
+      duplicate,
+      historyPath: HISTORY_PATH
     };
 
     if (includeDebugAssets) {
@@ -731,6 +987,18 @@ app.post('/generate', async (req, res) => {
     res.json(response);
   } catch (err) {
     console.error('[generate] error:', err);
+    if (publishToInstagram && notifySlackOnPublish) {
+      try {
+        await notifySlack(
+          [
+            ':x: Instagram publish failed',
+            `topic: ${topic || ''}`,
+            `source: ${sourceUrl || ''}`,
+            `error: ${err.message || String(err)}`
+          ].join('\n')
+        );
+      } catch (_) {}
+    }
     const statusCode = err.code === 'INVALID_GENERATED_JSON' ? 400 : 500;
     res.status(statusCode).json({ error: err.message });
   }
@@ -768,4 +1036,3 @@ function shutdown(signal) {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
-

@@ -1,0 +1,93 @@
+{
+  "name": "Instagram News Publish",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7,12,18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        260,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-RENDER-SERVICE.onrender.com/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-automation-token",
+              "value": "YOUR_AUTOMATION_TRIGGER_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"sourceUrl\": $json.sourceUrl,\n  \"sourceTitle\": $json.sourceTitle,\n  \"topic\": $json.topic,\n  \"caption\": $json.caption,\n  \"publishToInstagram\": true,\n  \"notifySlackOnPublish\": true,\n  \"data\": $json.data\n}"
+      },
+      "id": "render-publish",
+      "name": "Render Publish API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: {\n  topic: 'REPLACE_ME',\n  sourceUrl: 'https://example.com/article',\n  sourceTitle: 'Example title',\n  caption: 'Replace with generated caption',\n  data: {\n    date: new Date().toISOString().slice(0, 10),\n    topic: 'REPLACE_ME',\n    caption: 'Replace with generated caption',\n    cards: []\n  }\n}}];"
+      },
+      "id": "prepare-payload",
+      "name": "Prepare Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        280
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Payload": {
+      "main": [
+        [
+          {
+            "node": "Render Publish API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "instagram-news-publish-v1",
+  "meta": {}
+}
