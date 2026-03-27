@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const express = require('express');
 const { renderCardsWithSvg } = require('./svgRenderer');
+const { renderCardsWithHtml } = require('./htmlRenderer');
 const {
   HISTORY_PATH,
   buildKeys,
@@ -821,8 +822,14 @@ function normalizeData(rawData) {
 }
 
 async function renderCards(normalized) {
-  console.log('[generate] rendering with svg');
-  return renderCardsWithSvg(normalized);
+  try {
+    console.log('[generate] rendering with html');
+    return await renderCardsWithHtml(normalized);
+  } catch (error) {
+    console.warn('[generate] html renderer failed, falling back to svg:', error.message);
+    console.log('[generate] rendering with svg');
+    return renderCardsWithSvg(normalized);
+  }
 }
 
 app.post('/generate', requireAuth, async (req, res) => {
