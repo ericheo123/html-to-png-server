@@ -417,13 +417,35 @@ function chromeExecutableCandidates() {
   ].filter(Boolean);
 }
 
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)),
+  ]);
+}
+
 async function launchBrowser() {
   const args = ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'];
   let lastError;
 
   for (const executablePath of chromeExecutableCandidates()) {
     try {
-      return await launch({ headless: 'new', executablePath, args });
+      return await withTimeout(
+        launch({
+          headless: true,
+          executablePath,
+          pipe: true,
+          protocolTimeout: 20000,
+          args: [
+            ...args,
+            '--disable-gpu',
+            '--no-zygote',
+            '--single-process',
+          ],
+        }),
+        12000,
+        `browser launch (${executablePath})`
+      );
     } catch (error) {
       lastError = error;
     }
@@ -437,27 +459,32 @@ async function renderCardsWithHtml(normalized) {
   const browser = await launchBrowser();
 
   try {
-    const page = await browser.newPage({
-      viewport: { width: 1240, height: 1600, deviceScaleFactor: 2 },
-    });
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    await page.evaluate(async () => {
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
+    return await withTimeout((async () => {
+      const page = await browser.newPage({
+        viewport: { width: 1240, height: 1600, deviceScaleFactor: 2 },
+      });
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await page.evaluate(async () => {
+        if (document.fonts?.ready) {
+          await Promise.race([
+            document.fonts.ready,
+            new Promise((resolve) => setTimeout(resolve, 3000)),
+          ]);
+        }
+      });
+      await page.waitForTimeout(150);
+
+      const cards = await page.$$('.card-slide');
+      const images = [];
+      for (const card of cards) {
+        const screenshot = await card.screenshot({ type: 'jpeg', quality: 92, omitBackground: false });
+        images.push(Buffer.from(screenshot).toString('base64'));
       }
-    });
-    await page.waitForTimeout(200);
 
-    const cards = await page.$$('.card-slide');
-    const images = [];
-    for (const card of cards) {
-      const screenshot = await card.screenshot({ type: 'jpeg', quality: 92, omitBackground: false });
-      images.push(Buffer.from(screenshot).toString('base64'));
-    }
-
-    return { images, debugHtml: html };
+      return { images, debugHtml: html };
+    })(), 20000, 'html render');
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
 }
 
