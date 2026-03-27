@@ -25,6 +25,14 @@ const feeds = [
     lane: 'global',
     url: 'https://news.google.com/rss/search?q=' + encodeURIComponent('반도체 AI 한국') + '&hl=ko&gl=KR&ceid=KR:ko',
   },
+  {
+    lane: 'domestic',
+    url: 'https://news.google.com/rss/search?q=' + encodeURIComponent('한국 경제') + '&hl=ko&gl=KR&ceid=KR:ko',
+  },
+  {
+    lane: 'global',
+    url: 'https://news.google.com/rss/search?q=' + encodeURIComponent('글로벌 경제 한국') + '&hl=ko&gl=KR&ceid=KR:ko',
+  },
 ];
 
 const categoryConfig = {
@@ -326,11 +334,14 @@ const filtered = scored.filter((item) => {
   return true;
 });
 
-if (!filtered.length) {
+const fallbackWithoutTitleBlock = scored.filter((item) => !publishedUrls.has(item.link));
+const available = filtered.length ? filtered : fallbackWithoutTitleBlock;
+
+if (!available.length) {
   throw new Error('발행 가능한 새 기사 후보를 찾지 못했습니다.');
 }
 
-const selected = filtered[0];
+const selected = available[0];
 const category = pickCategory(`${selected.title} ${selected.description}`);
 const config = categoryConfig[category] || categoryConfig.general;
 const metrics = extractMetrics(`${selected.title} ${selected.description}`);
