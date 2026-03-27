@@ -1,6 +1,6 @@
 # Instagram News Render Service
 
-GitHub + Render + n8n 기준으로 운영하는 카드뉴스 렌더/발행 서비스입니다.
+GitHub + Render + self-hosted n8n 기준으로 운영하는 카드뉴스 렌더/발행 서비스입니다.
 
 ## 역할
 
@@ -122,5 +122,6 @@ Instagram, Cloudinary, Slack 외부 연결 상태 확인
 
 - Render 설정: [render.yaml](/Users/ericheo/Documents/CODEX/html-to-png-server/render.yaml)
 - n8n import 파일: [n8n_workflow_instagram_news.json](/Users/ericheo/Documents/CODEX/html-to-png-server/n8n_workflow_instagram_news.json)
+- self-hosted n8n 가이드: [N8N_SELF_HOSTED_SETUP.md](/Users/ericheo/Documents/CODEX/html-to-png-server/N8N_SELF_HOSTED_SETUP.md)
 - 환경 변수 예시: [.env.example](/Users/ericheo/Documents/CODEX/html-to-png-server/.env.example)
 - 운영 계획: [DEPLOYMENT_PLAN.md](/Users/ericheo/Documents/CODEX/html-to-png-server/DEPLOYMENT_PLAN.md)

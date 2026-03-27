@@ -39,12 +39,12 @@ Render에 넣을 비밀값:
 - `/health`
 - `/preflight`
 
-## 3. n8n
+## 3. self-hosted n8n
 
 필요한 정보:
 
-- n8n 인스턴스 URL
-- n8n 로그인 접근
+- n8n을 띄울 서버 또는 로컬 머신
+- n8n 접속 URL
 
 세팅할 값:
 
@@ -53,6 +53,7 @@ Render에 넣을 비밀값:
 
 할 일:
 
+- [N8N_SELF_HOSTED_SETUP.md](/Users/ericheo/Documents/CODEX/html-to-png-server/N8N_SELF_HOSTED_SETUP.md) 기준으로 n8n 실행
 - [n8n_workflow_instagram_news.json](/Users/ericheo/Documents/CODEX/html-to-png-server/n8n_workflow_instagram_news.json) import
 - `Prepare Payload` 노드를 실제 뉴스 탐색/카드 데이터 생성 흐름으로 교체
 - HTTP Request 노드 URL을 Render 서비스 URL로 교체
@@ -72,7 +73,7 @@ Render에 넣을 비밀값:
 
 - `AUTOMATION_TRIGGER_TOKEN`
 - Render 서비스 URL
-- n8n 인스턴스 정보
+- self-hosted n8n 접속 정보
 
 ## 5. 첫 운영 테스트
 
