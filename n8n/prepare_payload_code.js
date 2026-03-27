@@ -35,6 +35,17 @@ const feeds = [
   },
 ];
 
+const broadFallbackFeeds = [
+  {
+    lane: 'domestic',
+    url: 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko',
+  },
+  {
+    lane: 'global',
+    url: 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko',
+  },
+];
+
 const categoryConfig = {
   jobs_housing: {
     topic: '청년 취업과 주거비 부담',
@@ -319,11 +330,42 @@ async function fetchCandidates() {
   return [...dedup.values()];
 }
 
+async function fetchBroadFallbackCandidates() {
+  const all = [];
+  for (const feed of broadFallbackFeeds) {
+    try {
+      const res = await fetch(feed.url, {
+        headers: { 'user-agent': 'n8n-instagram-news-bot/1.0' },
+      });
+      if (!res.ok) continue;
+      const items = parseItems(await res.text(), feed.lane).slice(0, 20);
+      all.push(
+        ...items.filter((item) =>
+          /(한국|korea|청년|취업|주거|부채|금리|환율|유가|물가|관세|반도체|ai|경제)/i.test(
+            `${item.title} ${item.description} ${item.source}`,
+          ),
+        ),
+      );
+    } catch {
+      continue;
+    }
+  }
+
+  const dedup = new Map();
+  for (const item of all) {
+    const key = `${normalizeTitle(item.title)}|${item.source}`;
+    if (!dedup.has(key)) dedup.set(key, item);
+  }
+  return [...dedup.values()];
+}
+
 const published = await getPublishedHistory();
 const publishedUrls = new Set(published.map((x) => x.sourceUrl).filter(Boolean));
 const publishedTitles = new Set(published.map((x) => normalizeTitle(x.sourceTitle || x.topic || '')).filter(Boolean));
 
-const scored = (await fetchCandidates())
+const initialCandidates = await fetchCandidates();
+const candidatePool = initialCandidates.length ? initialCandidates : await fetchBroadFallbackCandidates();
+const scored = candidatePool
   .map((item) => ({ ...item, score: scoreCandidate(item) }))
   .sort((a, b) => b.score - a.score)
   .slice(0, 6);
@@ -335,10 +377,20 @@ const filtered = scored.filter((item) => {
 });
 
 const fallbackWithoutTitleBlock = scored.filter((item) => !publishedUrls.has(item.link));
-const available = filtered.length ? filtered : fallbackWithoutTitleBlock;
+let available = filtered.length ? filtered : fallbackWithoutTitleBlock;
 
 if (!available.length) {
-  throw new Error('발행 가능한 새 기사 후보를 찾지 못했습니다.');
+  available = [
+    {
+      lane: 'domestic',
+      title: '오늘 한국 경제 핵심 브리핑',
+      link: `https://news.google.com/search?q=${encodeURIComponent('한국 경제')}&fallback=${new Date().toISOString().slice(0, 10)}`,
+      pubDate: new Date().toUTCString(),
+      description: '후보 기사 수가 부족해 오늘 기준 핵심 경제 키워드 브리핑 모드로 전환했습니다.',
+      source: 'Google News Fallback',
+      score: 1,
+    },
+  ];
 }
 
 const selected = available[0];
